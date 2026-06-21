@@ -1,0 +1,110 @@
+.toastContainer {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 300px;
+  max-width: 380px;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-modal);
+  animation: slideIn 0.2s ease forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.toast.exiting {
+  animation: slideOut 0.15s ease-in forwards;
+}
+
+.iconWrap {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.content {
+  flex: 1;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 1px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+}
+
+.progressBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  animation: shrink 4s linear forwards;
+}
+
+.toast.success {
+  border-left: 3px solid var(--status-delivered);
+}
+.toast.success .progressBar {
+  background: var(--status-delivered);
+}
+
+.toast.error {
+  border-left: 3px solid var(--status-dead);
+}
+.toast.error .progressBar {
+  background: var(--status-dead);
+}
+
+.toast.warning {
+  border-left: 3px solid var(--status-retrying);
+}
+.toast.warning .progressBar {
+  background: var(--status-retrying);
+}
+
+.toast.info {
+  border-left: 3px solid var(--accent-primary);
+}
+.toast.info .progressBar {
+  background: var(--accent-primary);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
+}
+
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}

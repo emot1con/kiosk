@@ -1,0 +1,53 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.percentage {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.barBg {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.healthy {
+  background: var(--status-delivered);
+}
+
+.warning {
+  background: var(--status-retrying);
+}
+
+.danger {
+  background: var(--status-dead);
+}
+
+.muted {
+  background: var(--text-muted);
+}
