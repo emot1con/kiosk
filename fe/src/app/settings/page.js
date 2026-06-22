@@ -19,7 +19,6 @@ export default function SettingsPage() {
   const { user, apiKey, regenerateApiKey, isLoading } = useAuth();
   const { showToast } = useToast();
   
-  const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
 
@@ -108,38 +107,42 @@ export default function SettingsPage() {
               <div style={{ display: "flex", gap: "0.35rem" }}>
                 <input 
                   className="form-input" 
-                  type={showKey ? "text" : "password"} 
-                  value={apiKey} 
+                  type={apiKey ? "text" : "password"} 
+                  value={apiKey || "sk_live_************************"} 
                   readOnly
                   style={{ 
                     fontFamily: "var(--font-mono)", 
                     fontSize: "0.8rem", 
-                    letterSpacing: showKey ? "normal" : "0.2em" 
+                    letterSpacing: apiKey ? "normal" : "0.2em",
+                    color: apiKey ? "var(--text-primary)" : "var(--text-secondary)"
                   }}
                 />
                 
-                <button 
-                  onClick={() => setShowKey(!showKey)} 
-                  className="btn btn-secondary"
-                  style={{ padding: "0 0.5rem" }}
-                  title={showKey ? "Hide key" : "Show key"}
-                >
-                  {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-                
-                <button 
-                  onClick={handleCopy} 
-                  className="btn btn-secondary"
-                  style={{ padding: "0 0.5rem" }}
-                  title="Copy to clipboard"
-                >
-                  {copied ? (
-                    <Check size={15} style={{ color: "var(--status-delivered)" }} />
-                  ) : (
-                    <Copy size={15} />
-                  )}
-                </button>
+                {apiKey && (
+                  <button 
+                    onClick={handleCopy} 
+                    className="btn btn-secondary"
+                    style={{ padding: "0 0.5rem" }}
+                    title="Copy to clipboard"
+                  >
+                    {copied ? (
+                      <Check size={15} style={{ color: "var(--status-delivered)" }} />
+                    ) : (
+                      <Copy size={15} />
+                    )}
+                  </button>
+                )}
               </div>
+              
+              {!apiKey ? (
+                <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
+                  API Key Anda telah di-hash dan tidak dapat dilihat lagi. Lakukan Regenerate jika Anda kehilangannya.
+                </p>
+              ) : (
+                <p style={{ fontSize: "0.75rem", color: "var(--status-retrying)", marginTop: "0.5rem", fontWeight: 500 }}>
+                  Salin API Key ini sekarang. Anda tidak akan bisa melihatnya lagi setelah meninggalkan halaman ini.
+                </p>
+              )}
             </div>
 
             {/* Warning Alert banner */}

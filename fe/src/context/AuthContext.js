@@ -15,13 +15,9 @@ export function AuthProvider({ children }) {
   // Load user session on mount
   useEffect(() => {
     const savedUser = localStorage.getItem("kiosk_user");
-    const savedKey = localStorage.getItem("kiosk_api_key");
     
     if (savedUser) {
       setUser(JSON.parse(savedUser));
-    }
-    if (savedKey) {
-      setApiKey(savedKey);
     }
     setIsLoading(false);
   }, []);
@@ -54,12 +50,10 @@ export function AuthProvider({ children }) {
     await new Promise((resolve) => setTimeout(resolve, 800));
     
     const mockUser = { id: "usr_1", email };
-    const mockKey = localStorage.getItem("kiosk_api_key") || generateApiKey();
 
     setUser(mockUser);
-    setApiKey(mockKey);
+    setApiKey(""); // Reset API key on login, as it's not retrievable
     localStorage.setItem("kiosk_user", JSON.stringify(mockUser));
-    localStorage.setItem("kiosk_api_key", mockKey);
     
     setIsLoading(false);
     router.push("/dashboard");
@@ -74,9 +68,8 @@ export function AuthProvider({ children }) {
     const newKey = generateApiKey();
 
     setUser(mockUser);
-    setApiKey(newKey);
+    setApiKey(newKey); // Only available once after register
     localStorage.setItem("kiosk_user", JSON.stringify(mockUser));
-    localStorage.setItem("kiosk_api_key", newKey);
 
     setIsLoading(false);
     router.push("/dashboard");
@@ -87,7 +80,6 @@ export function AuthProvider({ children }) {
     setUser(null);
     setApiKey("");
     localStorage.removeItem("kiosk_user");
-    // We keep the API key in storage so it persists if the same user logs back in
     router.push("/login");
   };
 
@@ -95,7 +87,6 @@ export function AuthProvider({ children }) {
     await new Promise((resolve) => setTimeout(resolve, 500));
     const newKey = generateApiKey();
     setApiKey(newKey);
-    localStorage.setItem("kiosk_api_key", newKey);
     return newKey;
   };
 
