@@ -38,14 +38,17 @@ export default function RegisterPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
       const res = await register(email, password);
       if (res.success) {
         setRegisteredKey(res.apiKey);
+      } else {
+        setError(res.error || 'Gagal registrasi. Hubungi administrator.');
       }
     } catch (err) {
-      setError("Gagal registrasi. Hubungi administrator.");
+      setError('Terjadi kesalahan. Coba lagi.');
+    } finally {
       setIsSubmitting(false);
     }
   };
