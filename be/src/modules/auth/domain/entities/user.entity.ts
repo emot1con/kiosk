@@ -5,7 +5,8 @@ export class User {
   id: string;
   email: string;
   passwordHash: string;
-  apiKeyHash: string;
+  apiKeyHash: string | null;
+  apiKeyPrefix: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;

@@ -11,8 +11,11 @@ export class UserOrmEntity {
   @Column({ name: 'password_hash', length: 255 })
   passwordHash: string;
 
-  @Column({ name: 'api_key_hash', unique: true, length: 255 })
-  apiKeyHash: string;
+  @Column({ name: 'api_key_hash', type: 'varchar', unique: true, length: 255, nullable: true })
+  apiKeyHash: string | null;
+
+  @Column({ name: 'api_key_prefix', type: 'varchar', length: 50, nullable: true })
+  apiKeyPrefix: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

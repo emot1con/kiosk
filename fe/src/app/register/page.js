@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [registeredKey, setRegisteredKey] = useState("");
+  const [isRegistered, setIsRegistered] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const { register } = useAuth();
@@ -42,7 +42,7 @@ export default function RegisterPage() {
     try {
       const res = await register(email, password);
       if (res.success) {
-        setRegisteredKey(res.apiKey);
+        setIsRegistered(true);
       } else {
         setError(res.error || 'Gagal registrasi. Hubungi administrator.');
       }
@@ -59,56 +59,28 @@ export default function RegisterPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleGoToDashboard = () => {
-    router.push("/dashboard");
+  const handleGoToLogin = () => {
+    router.push("/login");
   };
 
-  // If registered successfully, display API Key first
-  if (registeredKey) {
+  if (isRegistered) {
     return (
       <div className={styles.container}>
         <div className={`${styles.card} glass-card`} style={{ textAlign: "center" }}>
           <div className={styles.header}>
             <ShieldCheck style={{ color: "var(--status-delivered)" }} size={48} />
             <h2 className={styles.title}>Registrasi Berhasil!</h2>
-            <p className={styles.subtitle}>Simpan API Key Anda di bawah ini dengan aman</p>
+            <p className={styles.subtitle} style={{ marginBottom: "1.5rem" }}>
+              Akun Anda telah berhasil dibuat. Anda dapat men-generate API Key di menu Settings setelah login.
+            </p>
           </div>
-
-          <div className={styles.keyContainer}>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: "500" }}>
-              API KEY ANDA (X-Api-Key):
-            </span>
-            <div className={styles.keyValue}>{registeredKey}</div>
-
-            <button
-              onClick={handleCopy}
-              className="btn btn-secondary btn-sm"
-              style={{ width: "100%", justifyContent: "center" }}
-            >
-              {copied ? (
-                <>
-                  <Check size={16} style={{ color: "var(--status-delivered)" }} />
-                  <span style={{ color: "var(--status-delivered)" }}>Tersalin!</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={16} />
-                  <span>Salin ke Clipboard</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          <p style={{ fontSize: "0.8rem", color: "var(--status-dead)", margin: "0.5rem 0 1rem 0", lineHeight: "1.4" }}>
-            ⚠️ PENTING: Kunci ini tidak akan ditampilkan lagi setelah Anda meninggalkan halaman ini demi alasan keamanan.
-          </p>
 
           <button
-            onClick={handleGoToDashboard}
+            onClick={handleGoToLogin}
             className="btn btn-primary"
             style={{ width: "100%" }}
           >
-            <span>Masuk ke Dashboard</span>
+            <span>Lanjut ke Login</span>
             <ArrowRight size={18} />
           </button>
         </div>

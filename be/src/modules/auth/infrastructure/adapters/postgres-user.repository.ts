@@ -18,6 +18,7 @@ export class PostgresUserRepository implements IUserRepository {
       email: ormEntity.email,
       passwordHash: ormEntity.passwordHash,
       apiKeyHash: ormEntity.apiKeyHash,
+      apiKeyPrefix: ormEntity.apiKeyPrefix,
       createdAt: ormEntity.createdAt,
       updatedAt: ormEntity.updatedAt,
       deletedAt: ormEntity.deletedAt,
@@ -43,14 +44,15 @@ export class PostgresUserRepository implements IUserRepository {
     const ormEntity = this.repository.create({
       email: data.email,
       passwordHash: data.passwordHash,
-      apiKeyHash: data.apiKeyHash,
+      apiKeyHash: data.apiKeyHash || null,
+      apiKeyPrefix: data.apiKeyPrefix || null,
     });
     const saved = await this.repository.save(ormEntity);
     return this.mapToDomain(saved);
   }
 
-  async updateApiKeyHash(userId: string, newHash: string): Promise<void> {
-    await this.repository.update(userId, { apiKeyHash: newHash });
+  async updateApiKey(userId: string, newHash: string, newPrefix: string): Promise<void> {
+    await this.repository.update(userId, { apiKeyHash: newHash, apiKeyPrefix: newPrefix });
   }
 
   async softDelete(userId: string): Promise<void> {

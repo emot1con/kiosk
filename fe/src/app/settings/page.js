@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import Modal from "@/components/Modal";
 
 export default function SettingsPage() {
   const { user, apiKey, regenerateApiKey, isLoading } = useAuth();
@@ -21,6 +22,7 @@ export default function SettingsPage() {
   
   const [copied, setCopied] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (isLoading || !user) {
     return (
@@ -40,6 +42,7 @@ export default function SettingsPage() {
     try {
       setIsRegenerating(true);
       await regenerateApiKey();
+      setIsModalOpen(true);
       showToast("API Key berhasil diregenerasi! Kunci lama tidak berlaku lagi.", "success");
     } catch (err) {
       showToast("Gagal meregenerasi API Key.", "error");
@@ -107,42 +110,23 @@ export default function SettingsPage() {
               <div style={{ display: "flex", gap: "0.35rem" }}>
                 <input 
                   className="form-input" 
-                  type={apiKey ? "text" : "password"} 
-                  value={apiKey || "sk_live_************************"} 
+                  type="text" 
+                  value={user?.apiKeyPrefix ? `${user.apiKeyPrefix}****************` : "Belum ada API Key. Silakan Generate."} 
                   readOnly
                   style={{ 
                     fontFamily: "var(--font-mono)", 
                     fontSize: "0.8rem", 
-                    letterSpacing: apiKey ? "normal" : "0.2em",
-                    color: apiKey ? "var(--text-primary)" : "var(--text-secondary)"
+                    letterSpacing: user?.apiKeyPrefix ? "0.1em" : "normal",
+                    color: "var(--text-secondary)"
                   }}
                 />
-                
-                {apiKey && (
-                  <button 
-                    onClick={handleCopy} 
-                    className="btn btn-secondary"
-                    style={{ padding: "0 0.5rem" }}
-                    title="Copy to clipboard"
-                  >
-                    {copied ? (
-                      <Check size={15} style={{ color: "var(--status-delivered)" }} />
-                    ) : (
-                      <Copy size={15} />
-                    )}
-                  </button>
-                )}
               </div>
               
-              {!apiKey ? (
-                <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
-                  API Key Anda telah di-hash dan tidak dapat dilihat lagi. Lakukan Regenerate jika Anda kehilangannya.
-                </p>
-              ) : (
-                <p style={{ fontSize: "0.75rem", color: "var(--status-retrying)", marginTop: "0.5rem", fontWeight: 500 }}>
-                  Salin API Key ini sekarang. Anda tidak akan bisa melihatnya lagi setelah meninggalkan halaman ini.
-                </p>
-              )}
+              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
+                {user?.apiKeyPrefix 
+                  ? "API Key Anda telah di-hash dan disembunyikan untuk keamanan. Lakukan Regenerate jika Anda kehilangannya."
+                  : "Anda belum memiliki API Key. Silakan tekan tombol Regenerate di bawah untuk membuatnya."}
+              </p>
             </div>
 
             {/* Warning Alert banner */}
@@ -178,6 +162,48 @@ export default function SettingsPage() {
         </div>
 
       </div>
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title="API Key Berhasil Dibuat"
+      >
+        <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
+          Berikut adalah API Key baru Anda. <strong style={{ color: "var(--status-retrying)" }}>Simpan dengan aman</strong>, karena kunci ini tidak akan ditampilkan lagi setelah Anda menutup popup ini.
+        </p>
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+          <input 
+            className="form-input" 
+            type="text" 
+            value={apiKey || ""} 
+            readOnly
+            style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem", flex: 1 }}
+          />
+          <button 
+            onClick={handleCopy} 
+            className="btn btn-secondary"
+            style={{ padding: "0 1rem" }}
+          >
+            {copied ? (
+              <>
+                <Check size={16} style={{ color: "var(--status-delivered)" }} />
+                <span style={{ color: "var(--status-delivered)" }}>Tersalin!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={16} />
+                <span>Salin</span>
+              </>
+            )}
+          </button>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button className="btn btn-primary" onClick={() => setIsModalOpen(false)}>
+            Tutup & Selesai
+          </button>
+        </div>
+      </Modal>
+
     </div>
   );
 }

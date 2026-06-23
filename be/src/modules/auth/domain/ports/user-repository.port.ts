@@ -7,6 +7,6 @@ export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
   findByApiKeyHash(hash: string): Promise<User | null>;
   create(data: Partial<User>): Promise<User>;
-  updateApiKeyHash(userId: string, newHash: string): Promise<void>;
+  updateApiKey(userId: string, newHash: string, newPrefix: string): Promise<void>;
   softDelete(userId: string): Promise<void>;
 }

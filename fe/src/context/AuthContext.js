@@ -71,14 +71,8 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await apiClient.post('/auth/register', { email, password });
       
-      setUser(data.user);
-      setApiKey(data.apiKey); // Only available once after register
-      localStorage.setItem("kiosk_user", JSON.stringify(data.user));
-      localStorage.setItem("kiosk_access_token", data.accessToken);
-      localStorage.setItem("kiosk_refresh_token", data.refreshToken);
-      
-      router.push("/dashboard");
-      return { success: true, apiKey: data.apiKey };
+      // Do not auto-login the user. We only show success, then they must login manually.
+      return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.message || 'Registration failed' };
     } finally {
@@ -104,6 +98,14 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await apiClient.post('/auth/regenerate-key');
       setApiKey(data.apiKey);
+      
+      // Update user state with the new prefix
+      if (user) {
+        const updatedUser = { ...user, apiKeyPrefix: data.apiKeyPrefix };
+        setUser(updatedUser);
+        localStorage.setItem("kiosk_user", JSON.stringify(updatedUser));
+      }
+      
       return data.apiKey;
     } catch (error) {
       throw error;
@@ -113,6 +115,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     apiKey,
+    setApiKey,
     login,
     register,
     logout,
