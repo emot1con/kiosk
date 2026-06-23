@@ -21,3 +21,9 @@ export class LoginDto {
   @IsNotEmpty()
   password: string;
 }
+
+export class RefreshDto {
+  @ApiProperty({ example: 'eyJhbGci...' })
+  @IsNotEmpty()
+  refreshToken: string;
+}

@@ -11,7 +11,9 @@ import { PostgresUserRepository } from './infrastructure/adapters/postgres-user.
 import { BcryptHashService } from './infrastructure/adapters/bcrypt-hash.service';
 import { USER_REPOSITORY } from './domain/ports/user-repository.port';
 import { HASH_SERVICE } from './domain/ports/hash-service.port';
+import { REFRESH_TOKEN_REPOSITORY } from './domain/ports/refresh-token-repository.port';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
+import { RedisRefreshTokenRepository } from './infrastructure/adapters/redis-refresh-token.repository';
 
 @Module({
   imports: [
@@ -37,6 +39,10 @@ import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
     {
       provide: HASH_SERVICE,
       useClass: BcryptHashService,
+    },
+    {
+      provide: REFRESH_TOKEN_REPOSITORY,
+      useClass: RedisRefreshTokenRepository,
     },
   ],
   exports: [

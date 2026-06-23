@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from '../../application/auth.service';
-import { RegisterDto, LoginDto } from '../dto/auth.dto';
+import { RegisterDto, LoginDto, RefreshDto } from '../dto/auth.dto';
 import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Auth')
@@ -35,5 +35,26 @@ export class AuthController {
   async regenerateKey(@Request() req) {
     const userId = req.user.id;
     return this.authService.regenerateApiKey(userId);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, description: 'Returns new access and refresh tokens' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  async refresh(@Body() dto: RefreshDto) {
+    return this.authService.refreshTokens(dto.refreshToken);
+  }
+
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout and revoke refresh token' })
+  @ApiResponse({ status: 200, description: 'Successfully logged out' })
+  async logout(@Request() req) {
+    const userId = req.user.id;
+    await this.authService.logout(userId);
+    return { success: true };
   }
 }

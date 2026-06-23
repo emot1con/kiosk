@@ -15,7 +15,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registeredKey, setRegisteredKey] = useState("");
   const [copied, setCopied] = useState(false);
-  
+
   const { register } = useAuth();
   const router = useRouter();
 
@@ -76,9 +76,9 @@ export default function RegisterPage() {
               API KEY ANDA (X-Api-Key):
             </span>
             <div className={styles.keyValue}>{registeredKey}</div>
-            
-            <button 
-              onClick={handleCopy} 
+
+            <button
+              onClick={handleCopy}
               className="btn btn-secondary btn-sm"
               style={{ width: "100%", justifyContent: "center" }}
             >
@@ -100,8 +100,8 @@ export default function RegisterPage() {
             ⚠️ PENTING: Kunci ini tidak akan ditampilkan lagi setelah Anda meninggalkan halaman ini demi alasan keamanan.
           </p>
 
-          <button 
-            onClick={handleGoToDashboard} 
+          <button
+            onClick={handleGoToDashboard}
             className="btn btn-primary"
             style={{ width: "100%" }}
           >
@@ -127,10 +127,10 @@ export default function RegisterPage() {
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email</label>
-            <input 
-              className="form-input" 
-              type="email" 
-              id="email" 
+            <input
+              className="form-input"
+              type="email"
+              id="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -140,10 +140,10 @@ export default function RegisterPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="password">Password</label>
-            <input 
-              className="form-input" 
-              type="password" 
-              id="password" 
+            <input
+              className="form-input"
+              type="password"
+              id="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -153,10 +153,10 @@ export default function RegisterPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="confirmPassword">Konfirmasi Password</label>
-            <input 
-              className="form-input" 
-              type="password" 
-              id="confirmPassword" 
+            <input
+              className="form-input"
+              type="password"
+              id="confirmPassword"
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -164,8 +164,8 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
             disabled={isSubmitting}
             style={{ width: "100%", marginTop: "0.5rem" }}

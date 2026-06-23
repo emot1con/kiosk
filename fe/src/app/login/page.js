@@ -16,22 +16,27 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     if (!email || !password) {
       setError("Email dan password wajib diisi");
       return;
     }
-    
+
     if (password.length < 6) {
       setError("Password minimal 6 karakter");
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      await login(email, password);
+      const result = await login(email, password);
+      if (!result.success) {
+        setError(result.error || 'Gagal login. Periksa kembali kredensial Anda.');
+      }
+      // On success, login() will call router.push('/dashboard') — no need to do anything here
     } catch (err) {
-      setError("Gagal login. Periksa kembali kredensial Anda.");
+      setError('Terjadi kesalahan. Coba lagi.');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -50,10 +55,10 @@ export default function LoginPage() {
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email</label>
-            <input 
-              className="form-input" 
-              type="email" 
-              id="email" 
+            <input
+              className="form-input"
+              type="email"
+              id="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -63,10 +68,10 @@ export default function LoginPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="password">Password</label>
-            <input 
-              className="form-input" 
-              type="password" 
-              id="password" 
+            <input
+              className="form-input"
+              type="password"
+              id="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -74,8 +79,8 @@ export default function LoginPage() {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
             disabled={isSubmitting}
             style={{ width: "100%", marginTop: "0.5rem" }}
