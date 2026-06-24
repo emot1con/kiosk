@@ -58,22 +58,16 @@ export class AuthService {
 
     const passwordHash = await this.hashService.hash(passwordPlain);
 
-    const user = await this.userRepository.create({
+    await this.userRepository.create({
       email,
       passwordHash,
       apiKeyHash: null,
       apiKeyPrefix: null,
     });
 
-    const tokens = await this.getTokens(user.id, user.email);
+    this.logger.log(`User registered successfully: email=${email}`);
 
-    this.logger.log(`User registered successfully: userId=${user.id}, email=${user.email}`);
-
-    return {
-      user: { id: user.id, email: user.email, apiKeyPrefix: user.apiKeyPrefix },
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-    };
+    return 'register succedd';
   }
 
   async login(email: string, passwordPlain: string) {

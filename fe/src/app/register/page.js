@@ -14,7 +14,6 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const { register } = useAuth();
   const router = useRouter();
@@ -51,12 +50,6 @@ export default function RegisterPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(registeredKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleGoToLogin = () => {
