@@ -43,6 +43,17 @@ export class PostgresAttemptRepository implements IAttemptRepository {
     return ormEntities.map(e => this.mapToDomain(e));
   }
 
+  async findByUserId(userId: string): Promise<DeliveryAttempt[]> {
+    const ormEntities = await this.repository.createQueryBuilder('attempt')
+      .innerJoin('events', 'event', 'event.id = attempt.event_id')
+      .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpoint_id')
+      .where('endpoint.user_id = :userId', { userId })
+      .orderBy('attempt.attempted_at', 'DESC')
+      .getMany();
+      
+    return ormEntities.map(e => this.mapToDomain(e));
+  }
+
   async getAvgLatencyByEndpoint(endpointId: string): Promise<number> {
     const result = await this.repository.createQueryBuilder('attempt')
       .select('AVG(attempt.latency_ms)', 'avg')

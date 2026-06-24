@@ -11,6 +11,7 @@ import { EventOrmEntity } from './infrastructure/adapters/event.orm-entity';
 import { PostgresEventRepository } from './infrastructure/adapters/postgres-event.repository';
 import { RabbitMQPublisher } from './infrastructure/adapters/rabbitmq-publisher.adapter';
 import { IngressController } from './infrastructure/controllers/ingress.controller';
+import { EventsController } from './infrastructure/controllers/events.controller';
 
 @Module({
   imports: [
@@ -35,7 +36,7 @@ import { IngressController } from './infrastructure/controllers/ingress.controll
       inject: [ConfigService],
     }),
   ],
-  controllers: [IngressController],
+  controllers: [IngressController, EventsController],
   providers: [
     IngressService,
     {

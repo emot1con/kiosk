@@ -12,12 +12,15 @@ import { FetchWebhookDispatcher } from './infrastructure/adapters/fetch-webhook.
 import { PostgresAttemptRepository } from './infrastructure/adapters/postgres-attempt.repository';
 import { RabbitMQConsumerAdapter } from './infrastructure/adapters/rabbitmq-consumer.adapter';
 
+import { AttemptsController } from './infrastructure/controllers/attempts.controller';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([AttemptOrmEntity]),
     EventsModule,
     EndpointsModule,
   ],
+  controllers: [AttemptsController],
   providers: [
     ProcessDeliveryUseCase,
     RetryStrategyService,
