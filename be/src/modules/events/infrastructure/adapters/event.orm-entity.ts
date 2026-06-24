@@ -14,6 +14,12 @@ export class EventOrmEntity {
   @Column({ type: 'varchar', default: 'pending' })
   status: string;
 
+  @Column({ name: 'idempotency_key', type: 'varchar', nullable: true, length: 255 })
+  idempotencyKey: string | null;
+
+  @Column({ name: 'is_processing', type: 'boolean', default: false })
+  isProcessing: boolean;
+
   @Column({ type: 'jsonb', default: {} })
   headers: Record<string, string>;
 

@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ENDPOINT_REPOSITORY } from '../../endpoints/domain/ports/endpoint-repository.port';
 import type { IEndpointRepository } from '../../endpoints/domain/ports/endpoint-repository.port';
@@ -47,17 +48,35 @@ export class IngressService {
       provider = 'sendgrid';
     }
 
+    // Generate idempotency key from JSON payload
+    const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
+    const idempotencyKey = crypto.createHash('sha256').update(payloadStr).digest('hex');
+
     // Create event
-    const event = await this.eventRepository.create({
-      endpointId: endpoint.id,
-      provider,
-      status: 'pending',
-      headers,
-      payload,
-      retryCount: 0,
-      maxRetries: 5,
-      nextRetryAt: null,
-    });
+    let event: WebhookEvent;
+    try {
+      event = await this.eventRepository.create({
+        endpointId: endpoint.id,
+        provider,
+        status: 'pending',
+        idempotencyKey,
+        headers,
+        payload,
+        retryCount: 0,
+        maxRetries: 5,
+        nextRetryAt: null,
+      });
+    } catch (err: any) {
+      // PostgreSQL Unique Violation Error Code
+      if (err.code === '23505') {
+        this.logger.warn(`Duplicate webhook payload detected for endpoint ${endpoint.id} (Idempotency Key: ${idempotencyKey}). Responding 200 OK without queueing.`);
+        return {
+          success: true,
+          eventId: 'duplicate',
+        };
+      }
+      throw err;
+    }
 
     this.logger.log(`Created event ${event.id} for endpoint ${endpoint.id}`);
 

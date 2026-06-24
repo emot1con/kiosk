@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { IEventRepository } from '../../domain/ports/event-repository.port';
 import { WebhookEvent } from '../../domain/entities/event.entity';
 import { EventOrmEntity } from './event.orm-entity';
@@ -18,6 +18,8 @@ export class PostgresEventRepository implements IEventRepository {
       endpointId: ormEntity.endpointId,
       provider: ormEntity.provider,
       status: ormEntity.status as any,
+      idempotencyKey: ormEntity.idempotencyKey,
+      isProcessing: ormEntity.isProcessing,
       headers: ormEntity.headers,
       payload: ormEntity.payload,
       retryCount: ormEntity.retryCount,
@@ -58,6 +60,8 @@ export class PostgresEventRepository implements IEventRepository {
       endpointId: data.endpointId,
       provider: data.provider || null,
       status: data.status || 'pending',
+      idempotencyKey: data.idempotencyKey || null,
+      isProcessing: data.isProcessing ?? false,
       headers: data.headers || {},
       payload: data.payload || {},
       retryCount: data.retryCount ?? 0,
@@ -69,12 +73,20 @@ export class PostgresEventRepository implements IEventRepository {
   }
 
   async updateStatus(id: string, status: string, retryData?: { retryCount: number; nextRetryAt: Date | null }): Promise<void> {
-    const updatePayload: any = { status };
+    const updatePayload: any = { status, isProcessing: false };
     if (retryData) {
       updatePayload.retryCount = retryData.retryCount;
       updatePayload.nextRetryAt = retryData.nextRetryAt;
     }
     await this.repository.update(id, updatePayload);
+  }
+
+  async lockForProcessing(id: string): Promise<boolean> {
+    const result = await this.repository.update(
+      { id, isProcessing: false, status: In(['pending', 'retrying']) },
+      { isProcessing: true }
+    );
+    return !!(result.affected && result.affected > 0);
   }
 
   async findRetryQueue(): Promise<WebhookEvent[]> {

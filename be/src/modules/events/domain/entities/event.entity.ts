@@ -5,6 +5,8 @@ export class WebhookEvent {
   endpointId: string;
   provider: string | null;
   status: EventStatus;
+  idempotencyKey: string | null;
+  isProcessing: boolean;
   headers: Record<string, string>;
   payload: Record<string, any>;
   retryCount: number;

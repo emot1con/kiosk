@@ -24,6 +24,10 @@ import { IngressController } from './infrastructure/controllers/ingress.controll
             name: 'kiosk.webhooks',
             type: 'topic',
           },
+          {
+            name: 'kiosk.webhooks.dlx',
+            type: 'topic',
+          },
         ],
         uri: configService.get<string>('RABBITMQ_URL') || 'amqp://guest:guest@localhost:5672',
         connectionInitOptions: { wait: false },
