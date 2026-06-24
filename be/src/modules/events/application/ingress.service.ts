@@ -1,0 +1,79 @@
+import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { ENDPOINT_REPOSITORY } from '../../endpoints/domain/ports/endpoint-repository.port';
+import type { IEndpointRepository } from '../../endpoints/domain/ports/endpoint-repository.port';
+import { EVENT_REPOSITORY } from '../domain/ports/event-repository.port';
+import type { IEventRepository } from '../domain/ports/event-repository.port';
+import { QUEUE_PUBLISHER } from '../domain/ports/queue-publisher.port';
+import type { IQueuePublisher } from '../domain/ports/queue-publisher.port';
+import { WebhookEvent } from '../domain/entities/event.entity';
+
+@Injectable()
+export class IngressService {
+  private readonly logger = new Logger(IngressService.name);
+
+  constructor(
+    @Inject(ENDPOINT_REPOSITORY)
+    private readonly endpointRepository: IEndpointRepository,
+    @Inject(EVENT_REPOSITORY)
+    private readonly eventRepository: IEventRepository,
+    @Inject(QUEUE_PUBLISHER)
+    private readonly queuePublisher: IQueuePublisher,
+  ) {}
+
+  async handleIncomingWebhook(incomingKey: string, headers: Record<string, any>, payload: any): Promise<{ success: boolean; eventId: string }> {
+    this.logger.log(`Received incoming webhook for key prefix: ${incomingKey.substring(0, 8)}...`);
+
+    const endpoint = await this.endpointRepository.findByIncomingKey(incomingKey);
+    if (!endpoint) {
+      this.logger.warn(`Endpoint not found for incomingKey: ${incomingKey.substring(0, 8)}...`);
+      throw new NotFoundException('Endpoint not found');
+    }
+
+    if (!endpoint.isActive) {
+      this.logger.warn(`Endpoint ${endpoint.id} is inactive/paused`);
+      throw new BadRequestException('Endpoint is paused');
+    }
+
+    // Determine provider from headers
+    let provider = 'unknown';
+    const userAgent = (headers['user-agent'] || '').toLowerCase();
+    if (userAgent.includes('stripe')) {
+      provider = 'stripe';
+    } else if (userAgent.includes('github') || headers['x-github-event']) {
+      provider = 'github';
+    } else if (userAgent.includes('shopify')) {
+      provider = 'shopify';
+    } else if (headers['x-sendgrid-signature']) {
+      provider = 'sendgrid';
+    }
+
+    // Create event
+    const event = await this.eventRepository.create({
+      endpointId: endpoint.id,
+      provider,
+      status: 'pending',
+      headers,
+      payload,
+      retryCount: 0,
+      maxRetries: 5,
+      nextRetryAt: null,
+    });
+
+    this.logger.log(`Created event ${event.id} for endpoint ${endpoint.id}`);
+
+    // Publish to delivery queue
+    try {
+      await this.queuePublisher.publish(event.id);
+      this.logger.log(`Published event ${event.id} to delivery queue`);
+    } catch (err) {
+      this.logger.error(`Failed to publish event ${event.id} to queue`, err);
+      // We don't fail the request if publishing fails, since it's already saved in the DB.
+      // A recovery process (cron/worker) can pick it up.
+    }
+
+    return {
+      success: true,
+      eventId: event.id,
+    };
+  }
+}

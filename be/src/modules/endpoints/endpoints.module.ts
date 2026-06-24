@@ -18,6 +18,9 @@ import { ENDPOINT_REPOSITORY } from './domain/ports/endpoint-repository.port';
       useClass: PostgresEndpointRepository,
     },
   ],
-  exports: [EndpointService],
+  exports: [
+    EndpointService,
+    ENDPOINT_REPOSITORY,
+  ],
 })
 export class EndpointsModule {}

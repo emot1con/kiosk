@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { EndpointService } from '../../application/endpoint.service';
-import { CreateEndpointDto } from '../../application/dto/create-endpoint.dto';
-import { UpdateEndpointDto } from '../../application/dto/update-endpoint.dto';
+import { CreateEndpointDto } from '../dto/create-endpoint.dto';
+import { UpdateEndpointDto } from '../dto/update-endpoint.dto';
 import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Endpoints')

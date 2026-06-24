@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { initialEndpoints, initialEvents, initialAttempts } from "@/lib/mockData";
+import { apiClient } from "@/lib/api";
 
 const DataContext = createContext(null);
 
@@ -13,16 +14,20 @@ export function DataProvider({ children }) {
 
   // Initialize data from localStorage or mockData
   useEffect(() => {
-    const savedEndpoints = localStorage.getItem("kiosk_endpoints");
+    const fetchEndpoints = async () => {
+      try {
+        const { data } = await apiClient.get('/endpoints');
+        // add missing local mock stats
+        const enriched = data.map(ep => ({ ...ep, eventsCount: 0, successCount: 0 }));
+        setEndpoints(enriched);
+      } catch (err) {
+        console.error("Failed to fetch endpoints", err);
+        setEndpoints([]);
+      }
+    };
+
     const savedEvents = localStorage.getItem("kiosk_events");
     const savedAttempts = localStorage.getItem("kiosk_attempts");
-
-    if (savedEndpoints) {
-      setEndpoints(JSON.parse(savedEndpoints));
-    } else {
-      setEndpoints(initialEndpoints);
-      localStorage.setItem("kiosk_endpoints", JSON.stringify(initialEndpoints));
-    }
 
     if (savedEvents) {
       setEvents(JSON.parse(savedEvents));
@@ -38,7 +43,15 @@ export function DataProvider({ children }) {
       localStorage.setItem("kiosk_attempts", JSON.stringify(initialAttempts));
     }
 
-    setIsDataLoading(false);
+    // Only fetch if we have an auth token
+    const token = localStorage.getItem('kiosk_access_token');
+    if (token) {
+      fetchEndpoints().finally(() => {
+        setIsDataLoading(false);
+      });
+    } else {
+      setIsDataLoading(false);
+    }
   }, []);
 
   // Save helper
@@ -114,44 +127,55 @@ export function DataProvider({ children }) {
   }, [events, attempts, endpoints, isDataLoading]);
 
   // Actions
-  const addEndpoint = (name, destinationUrl) => {
-    const newEp = {
-      id: "ep_" + Math.random().toString(36).substr(2, 9),
-      name,
-      destinationUrl,
-      incomingKey: Math.random().toString(36).substr(2, 12),
-      createdAt: new Date().toISOString(),
-      eventsCount: 0,
-      successCount: 0,
-      isActive: true
-    };
-    const nextEndpoints = [...endpoints, newEp];
-    saveToStorage("kiosk_endpoints", nextEndpoints, setEndpoints);
-    return newEp;
+  const addEndpoint = async (name, destinationUrl) => {
+    try {
+      const { data } = await apiClient.post('/endpoints', { name, destinationUrl });
+      const newEp = { ...data, eventsCount: 0, successCount: 0 };
+      setEndpoints(prev => [newEp, ...prev]);
+      return newEp;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
-  const deleteEndpoint = (id) => {
-    const nextEndpoints = endpoints.filter(ep => ep.id !== id);
-    // clean up associated events and attempts
-    const associatedEvents = events.filter(e => e.endpointId === id);
-    const associatedEventIds = associatedEvents.map(e => e.id);
-    
-    const nextEvents = events.filter(e => e.endpointId !== id);
-    const nextAttempts = attempts.filter(a => !associatedEventIds.includes(a.eventId));
+  const deleteEndpoint = async (id) => {
+    try {
+      await apiClient.delete(`/endpoints/${id}`);
+      setEndpoints(prev => prev.filter(ep => ep.id !== id));
+      
+      // clean up associated events and attempts
+      const associatedEvents = events.filter(e => e.endpointId === id);
+      const associatedEventIds = associatedEvents.map(e => e.id);
+      
+      const nextEvents = events.filter(e => e.endpointId !== id);
+      const nextAttempts = attempts.filter(a => !associatedEventIds.includes(a.eventId));
 
-    saveToStorage("kiosk_endpoints", nextEndpoints, setEndpoints);
-    saveToStorage("kiosk_events", nextEvents, setEvents);
-    saveToStorage("kiosk_attempts", nextAttempts, setAttempts);
+      saveToStorage("kiosk_events", nextEvents, setEvents);
+      saveToStorage("kiosk_attempts", nextAttempts, setAttempts);
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
-  const toggleEndpointActive = (id) => {
-    const updatedEndpoints = endpoints.map(ep => {
-      if (ep.id === id) {
-        return { ...ep, isActive: !ep.isActive };
-      }
-      return ep;
-    });
-    saveToStorage("kiosk_endpoints", updatedEndpoints, setEndpoints);
+  const toggleEndpointActive = async (id) => {
+    try {
+      const ep = endpoints.find(e => e.id === id);
+      if (!ep) return;
+      
+      const { data } = await apiClient.patch(`/endpoints/${id}`, { isActive: !ep.isActive });
+      
+      setEndpoints(prev => prev.map(p => {
+        if (p.id === id) {
+          return { ...p, isActive: data.isActive };
+        }
+        return p;
+      }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
   // Simulates a manual retry

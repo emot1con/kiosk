@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { EndpointsModule } from './modules/endpoints/endpoints.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { EndpointsModule } from './modules/endpoints/endpoints.module';
     }),
     AuthModule,
     EndpointsModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

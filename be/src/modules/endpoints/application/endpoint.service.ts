@@ -2,8 +2,8 @@ import { Injectable, Inject, NotFoundException, ForbiddenException, Logger } fro
 import { randomBytes } from 'crypto';
 import { ENDPOINT_REPOSITORY } from '../domain/ports/endpoint-repository.port';
 import type { IEndpointRepository } from '../domain/ports/endpoint-repository.port';
-import { CreateEndpointDto } from './dto/create-endpoint.dto';
-import { UpdateEndpointDto } from './dto/update-endpoint.dto';
+import { CreateEndpointDto } from '../infrastructure/dto/create-endpoint.dto';
+import { UpdateEndpointDto } from '../infrastructure/dto/update-endpoint.dto';
 
 @Injectable()
 export class EndpointService {
