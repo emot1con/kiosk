@@ -11,4 +11,6 @@ export interface IEventRepository {
   lockForProcessing(id: string): Promise<boolean>;
   findRetryQueue(): Promise<WebhookEvent[]>;
   getStatusCounts(userId: string): Promise<{ pending: number; delivered: number; retrying: number; dead: number }>;
+  resetAllDeadEvents(userId: string): Promise<string[]>;
+  resetEvent(id: string): Promise<boolean>;
 }

@@ -118,4 +118,32 @@ export class PostgresEventRepository implements IEventRepository {
     });
     return counts;
   }
+
+  async resetAllDeadEvents(userId: string): Promise<string[]> {
+    const deadEvents = await this.repository.createQueryBuilder('event')
+      .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpoint_id')
+      .where('endpoint.user_id = :userId', { userId })
+      .andWhere('event.status = :status', { status: 'dead' })
+      .andWhere('event.deleted_at IS NULL')
+      .getMany();
+
+    const ids = deadEvents.map(e => e.id);
+    if (ids.length > 0) {
+      await this.repository.update(ids, {
+        status: 'pending',
+        isProcessing: false,
+        retryCount: 0,
+        nextRetryAt: null
+      });
+    }
+    return ids;
+  }
+
+  async resetEvent(id: string): Promise<boolean> {
+    const result = await this.repository.update(
+      { id, isProcessing: false },
+      { status: 'pending', isProcessing: false, retryCount: 0, nextRetryAt: null }
+    );
+    return !!(result.affected && result.affected > 0);
+  }
 }

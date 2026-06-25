@@ -95,10 +95,14 @@ export function DataProvider({ children }) {
 
   // Simulates a manual retry
   const triggerManualRetry = async (eventId, forceSuccess = false) => {
-    // TODO: Implement actual manual retry API in backend if needed
-    // For now, we will leave this as a stub since real retries happen automatically
-    console.warn("Manual retry not fully implemented in real backend yet.");
-    return null;
+    try {
+      const { data } = await apiClient.post(`/events/${eventId}/retry`);
+      fetchData(); // Quickly fetch latest data to show it's pending/retrying
+      return { event: { status: 'retrying' } }; // return mock shape to satisfy current UI expectation
+    } catch (err) {
+      console.error("Failed to trigger manual retry", err);
+      return null;
+    }
   };
 
   // Simulates incoming event using real Ingress API
@@ -125,8 +129,15 @@ export function DataProvider({ children }) {
     }
   };
 
-  const bulkRetryDeadEvents = () => {
-    console.warn("Bulk retry not implemented in real backend yet.");
+  const bulkRetryDeadEvents = async () => {
+    try {
+      const { data } = await apiClient.post(`/events/retry-all-dead`);
+      fetchData();
+      return data;
+    } catch (err) {
+      console.error("Failed to bulk retry dead events", err);
+      return null;
+    }
   };
 
   return (

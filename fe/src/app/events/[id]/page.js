@@ -77,7 +77,7 @@ export default function EventDetailPage() {
       } else if (result.event.status === "dead") {
         showToast("Pengiriman ulang gagal. Event masuk ke Dead Letter queue.", "error");
       } else {
-        showToast("Pengiriman gagal, dijadwalkan ulang.", "warning");
+        showToast("Webhook dijadwalkan untuk dikirim ulang (Retrying).", "info");
       }
     } else {
       showToast("Gagal memproses ulang webhook.", "error");

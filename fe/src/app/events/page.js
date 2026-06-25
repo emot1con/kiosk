@@ -36,9 +36,9 @@ export default function EventsPage() {
 
   const deadEvents = events.filter(e => e.status === "dead");
 
-  const handleBulkRetry = () => {
+  const handleBulkRetry = async () => {
     if (confirm(`Apakah Anda yakin ingin mencoba mengirim ulang ${deadEvents.length} event yang gagal permanen (dead)?`)) {
-      bulkRetryDeadEvents();
+      await bulkRetryDeadEvents();
       showToast(`${deadEvents.length} event sedang diproses ulang.`, "success");
     }
   };
