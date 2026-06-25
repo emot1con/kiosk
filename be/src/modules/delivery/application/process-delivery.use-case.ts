@@ -1,4 +1,5 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { EVENT_REPOSITORY } from '../../events/domain/ports/event-repository.port';
 import type { IEventRepository } from '../../events/domain/ports/event-repository.port';
 import { ENDPOINT_REPOSITORY } from '../../endpoints/domain/ports/endpoint-repository.port';
@@ -58,11 +59,26 @@ export class ProcessDeliveryUseCase {
       return;
     }
 
-    // Inject Idempotency Header
+    // Inject Idempotency & Security Headers
+    let signatureHeader = '';
+    if (endpoint.signingSecret) {
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+      const payloadString = typeof event.payload === 'string' ? event.payload : JSON.stringify(event.payload);
+      const hmac = crypto
+        .createHmac('sha256', endpoint.signingSecret)
+        .update(`${timestamp}.${payloadString}`)
+        .digest('hex');
+      signatureHeader = `t=${timestamp},v1=${hmac}`;
+    }
+
     const headers = {
-      ...(event.headers || {}),
+      ...(event.headers as Record<string, string> || {}),
       'X-Kiosk-Event-Id': event.id,
     };
+
+    if (signatureHeader) {
+      headers['Kiosk-Signature'] = signatureHeader;
+    }
 
     // 4. Dispatch the HTTP payload
     this.logger.log(`Dispatching event ${event.id} to ${endpoint.destinationUrl}`);

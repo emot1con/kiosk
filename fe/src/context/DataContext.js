@@ -19,13 +19,13 @@ export function DataProvider({ children }) {
         apiClient.get('/events'),
         apiClient.get('/attempts')
       ]);
-      
+
       const endpointsData = endpointsRes.data.map(ep => {
         const epEvents = eventsRes.data.filter(e => e.endpointId === ep.id);
         const successCount = epEvents.filter(e => e.status === 'delivered').length;
         return { ...ep, eventsCount: epEvents.length, successCount };
       });
-      
+
       setEndpoints(endpointsData);
       setEvents(eventsRes.data);
       setAttempts(attemptsRes.data);
@@ -40,7 +40,7 @@ export function DataProvider({ children }) {
       fetchData().finally(() => {
         setIsDataLoading(false);
       });
-      
+
       // Poll every 3 seconds to feel alive
       const interval = setInterval(fetchData, 3000);
       return () => clearInterval(interval);
@@ -78,9 +78,9 @@ export function DataProvider({ children }) {
     try {
       const ep = endpoints.find(e => e.id === id);
       if (!ep) return;
-      
+
       const { data } = await apiClient.patch(`/endpoints/${id}`, { isActive: !ep.isActive });
-      
+
       setEndpoints(prev => prev.map(p => {
         if (p.id === id) {
           return { ...p, isActive: data.isActive };

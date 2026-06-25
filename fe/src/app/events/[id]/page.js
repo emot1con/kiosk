@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { 
-  ArrowLeft, 
-  RotateCw, 
-  Copy, 
-  Check, 
-  Clock, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  RotateCw,
+  Copy,
+  Check,
+  Clock,
+  CheckCircle,
   XCircle,
   HelpCircle,
   FileCode,
@@ -70,7 +70,7 @@ export default function EventDetailPage() {
     await new Promise(resolve => setTimeout(resolve, 800));
     const result = await triggerManualRetry(event.id);
     setIsRetrying(false);
-    
+
     if (result && result.event) {
       if (result.event.status === "delivered") {
         showToast("Webhook berhasil dikirim kembali!", "success");
@@ -106,8 +106,8 @@ export default function EventDetailPage() {
 
         {/* Retry Button - enabled only for dead or pending/failed states */}
         {(event.status === "dead" || event.status === "failed") && (
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             onClick={handleManualRetry}
             disabled={isRetrying}
           >
@@ -119,7 +119,7 @@ export default function EventDetailPage() {
 
       {/* Meta cards info */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem", marginBottom: "1.25rem" }}>
-        
+
         <div className="glass-card" style={{ padding: "1rem" }}>
           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: "0.25rem" }}>
             Target Endpoint
@@ -167,7 +167,7 @@ export default function EventDetailPage() {
 
       {/* Grid: Payload and Timeline */}
       <div className={styles.detailGrid}>
-        
+
         {/* Payload Card */}
         <div className={`${styles.payloadCard} glass-card`}>
           <div className={styles.payloadHeader}>
@@ -175,8 +175,8 @@ export default function EventDetailPage() {
               <FileCode size={14} style={{ color: "var(--accent-primary)" }} />
               <span>JSON Payload</span>
             </span>
-            <button 
-              className="btn btn-secondary btn-sm" 
+            <button
+              className="btn btn-secondary btn-sm"
               onClick={handleCopyPayload}
             >
               {copied ? (
@@ -216,7 +216,7 @@ export default function EventDetailPage() {
             <div className={styles.timelineList}>
               {attempts.map((attempt, index) => {
                 const isSuccess = attempt.statusCode >= 200 && attempt.statusCode < 300;
-                
+
                 return (
                   <div key={attempt.id} className={styles.timelineItem}>
                     <div className={`${styles.timelineDot} ${isSuccess ? styles.success : styles.failed}`} />

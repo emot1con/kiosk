@@ -14,7 +14,9 @@ import {
   Layers,
   ChevronRight,
   Trash2,
-  Clock
+  Clock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { useToast } from "@/context/ToastContext";
@@ -31,6 +33,7 @@ export default function EndpointDetailPage() {
   const { showToast } = useToast();
 
   const [copiedType, setCopiedType] = useState(null);
+  const [showSecret, setShowSecret] = useState(false);
   const [simulationProvider, setSimulationProvider] = useState("Stripe");
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -222,6 +225,39 @@ export default function EndpointDetailPage() {
                 <Copy size={14} />
               )}
             </button>
+          </div>
+        </div>
+
+        <div className={`${styles.detailCard} glass-card`}>
+          <span className={styles.detailLabel}>Signing Secret (HMAC)</span>
+          <div className={styles.detailValue}>
+            <span className={styles.detailValueCode}>
+              {endpoint.signingSecret 
+                ? (showSecret ? endpoint.signingSecret : 'whsec_' + '•'.repeat(24))
+                : "Not configured"}
+            </span>
+            <div style={{ display: "flex", gap: "0.25rem" }}>
+              <button 
+                className={styles.copyBtn} 
+                onClick={() => setShowSecret(!showSecret)}
+                title={showSecret ? "Hide Secret" : "Show Secret"}
+                disabled={!endpoint.signingSecret}
+              >
+                {showSecret ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+              <button 
+                className={styles.copyBtn} 
+                onClick={() => handleCopy(endpoint.signingSecret || "", "secret")}
+                title="Copy Secret"
+                disabled={!endpoint.signingSecret}
+              >
+                {copiedType === "secret" ? (
+                  <Check size={14} style={{ color: "var(--status-delivered)" }} />
+                ) : (
+                  <Copy size={14} />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

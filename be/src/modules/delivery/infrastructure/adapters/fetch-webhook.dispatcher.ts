@@ -22,6 +22,7 @@ export class FetchWebhookDispatcher implements IWebhookDispatcher {
           lowerKey.startsWith('x-github-') ||
           lowerKey.startsWith('x-shopify-') ||
           lowerKey.startsWith('x-kiosk-') ||
+          lowerKey.startsWith('kiosk-') ||
           lowerKey === 'user-agent'
         ) {
           cleanHeaders[key] = String(value);

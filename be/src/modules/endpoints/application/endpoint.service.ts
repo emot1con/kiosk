@@ -16,13 +16,14 @@ export class EndpointService {
 
   async create(userId: string, dto: CreateEndpointDto) {
     const incomingKey = randomBytes(16).toString('hex'); // 32 chars
+    const generatedSigningSecret = 'whsec_' + randomBytes(24).toString('base64url');
     
     const endpoint = await this.endpointRepository.create({
       userId,
       name: dto.name,
       incomingKey,
       destinationUrl: dto.destinationUrl,
-      signingSecret: dto.signingSecret,
+      signingSecret: dto.signingSecret || generatedSigningSecret,
       isActive: true,
     });
 
