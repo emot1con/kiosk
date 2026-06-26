@@ -8,6 +8,8 @@ import { ATTEMPT_REPOSITORY } from '../domain/ports/attempt-repository.port';
 import type { IAttemptRepository } from '../domain/ports/attempt-repository.port';
 import { WEBHOOK_DISPATCHER } from '../domain/ports/webhook-dispatcher.port';
 import type { IWebhookDispatcher } from '../domain/ports/webhook-dispatcher.port';
+import { QUEUE_PUBLISHER } from '../../events/domain/ports/queue-publisher.port';
+import type { IQueuePublisher } from '../../events/domain/ports/queue-publisher.port';
 import { RetryStrategyService } from '../domain/services/retry-strategy.service';
 
 @Injectable()
@@ -23,6 +25,8 @@ export class ProcessDeliveryUseCase {
     private readonly attemptRepository: IAttemptRepository,
     @Inject(WEBHOOK_DISPATCHER)
     private readonly webhookDispatcher: IWebhookDispatcher,
+    @Inject(QUEUE_PUBLISHER)
+    private readonly queuePublisher: IQueuePublisher,
     private readonly retryStrategy: RetryStrategyService,
   ) {}
 
@@ -105,11 +109,16 @@ export class ProcessDeliveryUseCase {
         await this.eventRepository.updateStatus(event.id, 'dead');
       } else {
         const nextRetryAt = this.retryStrategy.calculateNextRetry(event.retryCount);
-        this.logger.log(`Event ${event.id} failed (Status: ${result.status}). Scheduling retry #${nextRetryCount} at ${nextRetryAt.toISOString()}`);
+        const delayMs = nextRetryAt.getTime() - Date.now();
+        this.logger.log(`Event ${event.id} failed (Status: ${result.status}). Scheduling retry #${nextRetryCount} at ${nextRetryAt.toISOString()} (Delay: ${delayMs}ms)`);
+        
         await this.eventRepository.updateStatus(event.id, 'retrying', {
           retryCount: nextRetryCount,
           nextRetryAt,
         });
+
+        // Publish to delayed queue as primary retry mechanism
+        await this.queuePublisher.publishWithDelay(event.id, delayMs);
       }
     }
   }

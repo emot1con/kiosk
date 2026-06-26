@@ -96,6 +96,7 @@ export class PostgresEventRepository implements IEventRepository {
       .andWhere('event.is_processing = false')
       .andWhere('event.next_retry_at <= :now', { now })
       .andWhere('event.deleted_at IS NULL')
+      .limit(100)
       .getMany();
       
     return ormEntities.map(e => this.mapToDomain(e));
