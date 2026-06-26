@@ -13,6 +13,12 @@ export class UpdateEndpointDto {
   @IsOptional()
   destinationUrl?: string;
 
+  @ApiPropertyOptional({ example: 'stripe', description: 'Provider of the webhook' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  provider?: string;
+
   @ApiPropertyOptional({ example: 'new_whsec_...' })
   @IsString()
   @IsOptional()

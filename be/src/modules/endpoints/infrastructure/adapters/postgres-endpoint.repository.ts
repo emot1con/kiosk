@@ -19,6 +19,7 @@ export class PostgresEndpointRepository implements IEndpointRepository {
       name: ormEntity.name,
       incomingKey: ormEntity.incomingKey,
       destinationUrl: ormEntity.destinationUrl,
+      provider: ormEntity.provider,
       signingSecret: ormEntity.signingSecret,
       isActive: ormEntity.isActive,
       createdAt: ormEntity.createdAt,
@@ -51,6 +52,7 @@ export class PostgresEndpointRepository implements IEndpointRepository {
       name: data.name,
       incomingKey: data.incomingKey,
       destinationUrl: data.destinationUrl,
+      provider: data.provider || null,
       signingSecret: data.signingSecret || null,
       isActive: data.isActive ?? true,
     });

@@ -35,18 +35,7 @@ export class IngressService {
       throw new BadRequestException('Endpoint is paused');
     }
 
-    // Determine provider from headers
-    let provider = 'unknown';
-    const userAgent = (headers['user-agent'] || '').toLowerCase();
-    if (userAgent.includes('stripe')) {
-      provider = 'stripe';
-    } else if (userAgent.includes('github') || headers['x-github-event']) {
-      provider = 'github';
-    } else if (userAgent.includes('shopify')) {
-      provider = 'shopify';
-    } else if (headers['x-sendgrid-signature']) {
-      provider = 'sendgrid';
-    }
+    const provider = endpoint.provider || 'unknown';
 
     // Generate idempotency key from JSON payload
     const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload || {});

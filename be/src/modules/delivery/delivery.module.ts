@@ -10,6 +10,7 @@ import { RetryStrategyService } from './domain/services/retry-strategy.service';
 import { AttemptOrmEntity } from './infrastructure/adapters/attempt.orm-entity';
 import { FetchWebhookDispatcher } from './infrastructure/adapters/fetch-webhook.dispatcher';
 import { PostgresAttemptRepository } from './infrastructure/adapters/postgres-attempt.repository';
+import { RetrySchedulerService } from './application/retry-scheduler.service';
 import { RabbitMQConsumerAdapter } from './infrastructure/adapters/rabbitmq-consumer.adapter';
 
 import { AttemptsController } from './infrastructure/controllers/attempts.controller';
@@ -25,6 +26,7 @@ import { AttemptsController } from './infrastructure/controllers/attempts.contro
     ProcessDeliveryUseCase,
     RetryStrategyService,
     RabbitMQConsumerAdapter,
+    RetrySchedulerService,
     {
       provide: ATTEMPT_REPOSITORY,
       useClass: PostgresAttemptRepository,

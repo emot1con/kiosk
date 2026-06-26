@@ -4,6 +4,7 @@ export class Endpoint {
   name: string;
   incomingKey: string;
   destinationUrl: string;
+  provider: string | null;
   signingSecret: string | null;
   isActive: boolean;
   createdAt: Date;

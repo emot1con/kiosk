@@ -13,6 +13,12 @@ export class CreateEndpointDto {
   @IsNotEmpty()
   destinationUrl: string;
 
+  @ApiPropertyOptional({ example: 'stripe', description: 'Provider of the webhook (e.g., stripe, github, shopify)' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  provider?: string;
+
   @ApiPropertyOptional({ example: 'whsec_...', description: 'Optional signing secret to verify webhooks' })
   @IsString()
   @IsOptional()

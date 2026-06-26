@@ -262,6 +262,24 @@ export default function EndpointDetailPage() {
         </div>
 
         <div className={`${styles.detailCard} glass-card`}>
+          <span className={styles.detailLabel}>Provider</span>
+          <div className={styles.detailValue} style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+            <span style={{ 
+              textTransform: "capitalize",
+              background: "var(--bg-tertiary)", 
+              padding: "0.15rem 0.5rem", 
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--border-default)",
+              fontSize: "0.85rem",
+              color: "var(--text-primary)",
+              fontWeight: 600
+            }}>
+              {endpoint.provider || "Unknown"}
+            </span>
+          </div>
+        </div>
+
+        <div className={`${styles.detailCard} glass-card`}>
           <span className={styles.detailLabel}>Meta Info</span>
           <div className={styles.detailValue} style={{ fontSize: "0.82rem", color: "var(--text-secondary)", gap: "0.75rem" }}>
             <span style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>

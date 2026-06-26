@@ -52,9 +52,9 @@ export function DataProvider({ children }) {
   // Background Processor removed, we now rely on real backend and polling.
 
   // Actions
-  const addEndpoint = async (name, destinationUrl) => {
+  const addEndpoint = async (name, destinationUrl, provider) => {
     try {
-      const { data } = await apiClient.post('/endpoints', { name, destinationUrl });
+      const { data } = await apiClient.post('/endpoints', { name, destinationUrl, provider });
       const newEp = { ...data, eventsCount: 0, successCount: 0 };
       setEndpoints(prev => [newEp, ...prev]);
       return newEp;

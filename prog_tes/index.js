@@ -5,7 +5,7 @@ const PORT = 3005;
 
 // Ganti nilai ini dengan "Signing Secret (HMAC)" dari dashboard Kiosk
 // Pastikan diawali dengan "whsec_"
-const KIOSK_SIGNING_SECRET = "whsec_-UMlDISGwD3dD8CS9WutN9nGP3v7SWdL";
+const KIOSK_SIGNING_SECRET = "whsec_f8D7_3_8KP7vRblRi-lJHf5U0VlYDeBI";
 
 // Konfigurasi khusus:
 // Agar tanda tangan bisa divalidasi dengan benar, kita harus menghitung hash 

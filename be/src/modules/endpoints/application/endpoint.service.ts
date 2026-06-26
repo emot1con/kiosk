@@ -23,6 +23,7 @@ export class EndpointService {
       name: dto.name,
       incomingKey,
       destinationUrl: dto.destinationUrl,
+      provider: dto.provider,
       signingSecret: dto.signingSecret || generatedSigningSecret,
       isActive: true,
     });
@@ -52,6 +53,7 @@ export class EndpointService {
     const updated = await this.endpointRepository.update(id, {
       name: dto.name ?? endpoint.name,
       destinationUrl: dto.destinationUrl ?? endpoint.destinationUrl,
+      provider: dto.provider ?? endpoint.provider,
       signingSecret: dto.signingSecret !== undefined ? dto.signingSecret : endpoint.signingSecret,
       isActive: dto.isActive ?? endpoint.isActive,
     });

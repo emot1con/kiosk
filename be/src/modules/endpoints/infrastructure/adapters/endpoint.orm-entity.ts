@@ -17,6 +17,9 @@ export class EndpointOrmEntity {
   @Column({ name: 'destination_url', type: 'text' })
   destinationUrl: string;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  provider: string | null;
+
   @Column({ name: 'signing_secret', type: 'varchar', length: 255, nullable: true })
   signingSecret: string | null;
 

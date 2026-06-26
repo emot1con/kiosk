@@ -18,6 +18,13 @@ import Modal from "@/components/Modal";
 import EmptyState from "@/components/EmptyState";
 import styles from "./endpoints.module.css";
 
+const ALL_PROVIDERS = [
+  { id: "stripe", name: "Stripe" },
+  { id: "github", name: "GitHub" },
+  { id: "shopify", name: "Shopify" },
+  { id: "midtrans", name: "Midtrans" }
+];
+
 export default function EndpointsPage() {
   const { endpoints, events, attempts, addEndpoint, deleteEndpoint, toggleEndpointActive, isDataLoading } = useData();
   const { showToast } = useToast();
@@ -26,6 +33,9 @@ export default function EndpointsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newEpName, setNewEpName] = useState("");
   const [newEpUrl, setNewEpUrl] = useState("");
+  const [newEpProvider, setNewEpProvider] = useState("stripe");
+  const [customProvider, setCustomProvider] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [formError, setFormError] = useState("");
 
   // Copy states
@@ -67,7 +77,6 @@ export default function EndpointsPage() {
       return;
     }
 
-    // Basic URL validation
     try {
       new URL(newEpUrl);
     } catch (_) {
@@ -75,13 +84,28 @@ export default function EndpointsPage() {
       return;
     }
 
-    addEndpoint(newEpName, newEpUrl);
+    const providerToSend = newEpProvider === "custom" ? customProvider.trim().toLowerCase() : newEpProvider;
+
+    addEndpoint(newEpName, newEpUrl, providerToSend || null);
     showToast(`Endpoint "${newEpName}" berhasil dibuat.`, "success");
     
     // Reset form
     setNewEpName("");
     setNewEpUrl("");
+    setNewEpProvider("stripe");
+    setCustomProvider("");
+    setShowCustomInput(false);
     setIsModalOpen(false);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setFormError("");
+    setNewEpName("");
+    setNewEpUrl("");
+    setNewEpProvider("stripe");
+    setCustomProvider("");
+    setShowCustomInput(false);
   };
 
   return (
@@ -157,9 +181,26 @@ export default function EndpointsPage() {
                         </div>
                       </td>
                       <td style={{ fontWeight: 600 }}>
-                        <Link href={`/endpoints/${ep.id}`} style={{ color: "var(--text-primary)" }}>
-                          {ep.name}
-                        </Link>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                          <Link href={`/endpoints/${ep.id}`} style={{ color: "var(--text-primary)" }}>
+                            {ep.name}
+                          </Link>
+                          {ep.provider && (
+                            <span style={{ 
+                              fontSize: "0.72rem", 
+                              color: "var(--text-secondary)", 
+                              background: "var(--bg-tertiary)", 
+                              border: "1px solid var(--border-default)", 
+                              padding: "0.05rem 0.35rem", 
+                              borderRadius: "var(--radius-sm)",
+                              width: "fit-content",
+                              textTransform: "capitalize",
+                              fontWeight: 500
+                            }}>
+                              {ep.provider}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <div className={styles.urlContainer}>
@@ -247,7 +288,7 @@ export default function EndpointsPage() {
       </div>
 
       {/* Create Endpoint Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setFormError(""); }} title="Buat Endpoint Baru">
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Buat Endpoint Baru">
         <form onSubmit={handleCreateEndpoint}>
           {formError && <div className={styles.error} style={{ marginBottom: "1rem" }}>{formError}</div>}
           
@@ -278,8 +319,53 @@ export default function EndpointsPage() {
             </span>
           </div>
 
+          <div className="form-group">
+            <label className="form-label" htmlFor="ep-provider">Provider Webhook</label>
+            <select
+              id="ep-provider"
+              className="form-input"
+              value={newEpProvider}
+              onChange={(e) => {
+                const val = e.target.value;
+                setNewEpProvider(val);
+                if (val === "custom") {
+                  setShowCustomInput(true);
+                } else {
+                  setShowCustomInput(false);
+                }
+              }}
+              style={{
+                background: "var(--bg-primary)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-default)",
+              }}
+            >
+              {ALL_PROVIDERS.map((prov) => (
+                <option key={prov.id} value={prov.id}>
+                  {prov.name}
+                </option>
+              ))}
+              <option value="custom">Lainnya...</option>
+            </select>
+
+            {showCustomInput && (
+              <div style={{ marginTop: "0.75rem" }}>
+                <input 
+                  id="custom-provider"
+                  className="form-input" 
+                  type="text" 
+                  placeholder="Masukkan nama provider custom (e.g. sendgrid, slack)" 
+                  value={customProvider}
+                  onChange={(e) => setCustomProvider(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+
+
           <div className={styles.modalButtons}>
-            <button type="button" className="btn btn-secondary" onClick={() => { setIsModalOpen(false); setFormError(""); }}>
+            <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">

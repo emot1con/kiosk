@@ -93,6 +93,7 @@ export class PostgresEventRepository implements IEventRepository {
     const now = new Date();
     const ormEntities = await this.repository.createQueryBuilder('event')
       .where('event.status = :status', { status: 'retrying' })
+      .andWhere('event.is_processing = false')
       .andWhere('event.next_retry_at <= :now', { now })
       .andWhere('event.deleted_at IS NULL')
       .getMany();

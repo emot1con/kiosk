@@ -55,7 +55,7 @@ export default function EventDetailPage() {
   const endpoint = endpoints.find(ep => ep.id === event.endpointId);
   const attempts = allAttempts
     .filter(a => a.eventId === id)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    .sort((a, b) => new Date(b.attemptedAt) - new Date(a.attemptedAt));
 
   const handleCopyPayload = () => {
     navigator.clipboard.writeText(JSON.stringify(event.payload, null, 2));
@@ -215,7 +215,7 @@ export default function EventDetailPage() {
           ) : (
             <div className={styles.timelineList}>
               {attempts.map((attempt, index) => {
-                const isSuccess = attempt.statusCode >= 200 && attempt.statusCode < 300;
+                const isSuccess = attempt.responseStatus >= 200 && attempt.responseStatus < 300;
 
                 return (
                   <div key={attempt.id} className={styles.timelineItem}>
@@ -228,15 +228,15 @@ export default function EventDetailPage() {
                           <XCircle size={14} style={{ color: "var(--status-dead)" }} />
                         )}
                         <span>
-                          Attempt #{attempts.length - index}: HTTP {attempt.statusCode || "ERROR"}
+                          Attempt #{attempts.length - index}: HTTP {attempt.responseStatus || "ERROR"}
                         </span>
                       </span>
                       <span className={styles.timelineTime}>
-                        {formatDateTime(attempt.createdAt)} ({formatRelativeTime(attempt.createdAt)})
+                        {formatDateTime(attempt.attemptedAt)} ({formatRelativeTime(attempt.attemptedAt)})
                       </span>
                     </div>
                     <div className={styles.timelineLog}>
-                      {attempt.errorLog || `HTTP ${attempt.statusCode} OK - Payload accepted by target server`}
+                      {attempt.responseBody || (attempt.responseStatus ? `HTTP ${attempt.responseStatus} OK - Payload accepted by target server` : 'Connection timeout / Error')}
                     </div>
                   </div>
                 );

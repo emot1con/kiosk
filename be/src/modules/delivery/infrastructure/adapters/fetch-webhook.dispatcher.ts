@@ -13,18 +13,12 @@ export class FetchWebhookDispatcher implements IWebhookDispatcher {
       'Content-Type': 'application/json',
     };
 
-    // Forward relevant signature and provider-specific headers
+    // Forward all original headers safely (excluding Host and standard overridden ones)
     if (headers) {
+      const excludedHeaders = ['host', 'content-length', 'content-type', 'connection'];
       for (const [key, value] of Object.entries(headers)) {
         const lowerKey = key.toLowerCase();
-        if (
-          lowerKey.startsWith('stripe-') ||
-          lowerKey.startsWith('x-github-') ||
-          lowerKey.startsWith('x-shopify-') ||
-          lowerKey.startsWith('x-kiosk-') ||
-          lowerKey.startsWith('kiosk-') ||
-          lowerKey === 'user-agent'
-        ) {
+        if (!excludedHeaders.includes(lowerKey)) {
           cleanHeaders[key] = String(value);
         }
       }
