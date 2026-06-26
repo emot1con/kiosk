@@ -1,0 +1,11 @@
+FROM rabbitmq:3.13-management-alpine
+
+# Install curl
+RUN apk add --no-cache curl
+
+# Download the delayed message exchange plugin
+RUN curl -L https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases/download/v3.13.0/rabbitmq_delayed_message_exchange-3.13.0.ez > $RABBITMQ_HOME/plugins/rabbitmq_delayed_message_exchange-3.13.0.ez \
+    && chown rabbitmq:rabbitmq $RABBITMQ_HOME/plugins/rabbitmq_delayed_message_exchange-3.13.0.ez
+
+# Enable the plugin
+RUN rabbitmq-plugins enable --offline rabbitmq_delayed_message_exchange

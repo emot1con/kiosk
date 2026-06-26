@@ -4,12 +4,14 @@ import { Repository, IsNull } from 'typeorm';
 import { IUserRepository } from '../../domain/ports/user-repository.port';
 import { User } from '../../domain/entities/user.entity';
 import { UserOrmEntity } from './user.orm-entity';
+import { RedisCacheService } from '../../../../shared/infrastructure/redis-cache.service';
 
 @Injectable()
 export class PostgresUserRepository implements IUserRepository {
   constructor(
     @InjectRepository(UserOrmEntity)
     private readonly repository: Repository<UserOrmEntity>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   private mapToDomain(ormEntity: UserOrmEntity): User {
@@ -26,8 +28,18 @@ export class PostgresUserRepository implements IUserRepository {
   }
 
   async findById(id: string): Promise<User | null> {
+    const cacheKey = `user:id:${id}`;
+
+    const cached = await this.cache.get<User>(cacheKey);
+    if (cached) return new User(cached);
+
     const ormEntity = await this.repository.findOne({ where: { id, deletedAt: IsNull() } });
-    return ormEntity ? this.mapToDomain(ormEntity) : null;
+    if (!ormEntity) return null;
+
+    const user = this.mapToDomain(ormEntity);
+    await this.cache.set(cacheKey, user, 600);
+
+    return user;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -53,9 +65,11 @@ export class PostgresUserRepository implements IUserRepository {
 
   async updateApiKey(userId: string, newHash: string, newPrefix: string): Promise<void> {
     await this.repository.update(userId, { apiKeyHash: newHash, apiKeyPrefix: newPrefix });
+    await this.cache.del(`user:id:${userId}`);
   }
 
   async softDelete(userId: string): Promise<void> {
     await this.repository.update(userId, { deletedAt: new Date() });
+    await this.cache.del(`user:id:${userId}`);
   }
 }

@@ -4,12 +4,14 @@ import { Repository, IsNull } from 'typeorm';
 import { IEndpointRepository } from '../../domain/ports/endpoint-repository.port';
 import { Endpoint } from '../../domain/entities/endpoint.entity';
 import { EndpointOrmEntity } from './endpoint.orm-entity';
+import { RedisCacheService } from '../../../../shared/infrastructure/redis-cache.service';
 
 @Injectable()
 export class PostgresEndpointRepository implements IEndpointRepository {
   constructor(
     @InjectRepository(EndpointOrmEntity)
     private readonly repository: Repository<EndpointOrmEntity>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   private mapToDomain(ormEntity: EndpointOrmEntity): Endpoint {
@@ -29,8 +31,18 @@ export class PostgresEndpointRepository implements IEndpointRepository {
   }
 
   async findById(id: string): Promise<Endpoint | null> {
+    const cacheKey = `endpoint:id:${id}`;
+
+    const cached = await this.cache.get<Endpoint>(cacheKey);
+    if (cached) return new Endpoint(cached);
+
     const ormEntity = await this.repository.findOne({ where: { id, deletedAt: IsNull() } });
-    return ormEntity ? this.mapToDomain(ormEntity) : null;
+    if (!ormEntity) return null;
+
+    const endpoint = this.mapToDomain(ormEntity);
+    await this.cache.set(cacheKey, endpoint, 300);
+
+    return endpoint;
   }
 
   async findByUserId(userId: string): Promise<Endpoint[]> {
@@ -42,8 +54,18 @@ export class PostgresEndpointRepository implements IEndpointRepository {
   }
 
   async findByIncomingKey(key: string): Promise<Endpoint | null> {
+    const cacheKey = `endpoint:key:${key}`;
+
+    const cached = await this.cache.get<Endpoint>(cacheKey);
+    if (cached) return new Endpoint(cached);
+
     const ormEntity = await this.repository.findOne({ where: { incomingKey: key, deletedAt: IsNull() } });
-    return ormEntity ? this.mapToDomain(ormEntity) : null;
+    if (!ormEntity) return null;
+
+    const endpoint = this.mapToDomain(ormEntity);
+    await this.cache.set(cacheKey, endpoint, 300);
+
+    return endpoint;
   }
 
   async create(data: Partial<Endpoint>): Promise<Endpoint> {
@@ -61,15 +83,39 @@ export class PostgresEndpointRepository implements IEndpointRepository {
   }
 
   async update(id: string, data: Partial<Endpoint>): Promise<Endpoint> {
+    // Fetch old data to get incomingKey & userId for cache invalidation
+    const oldEndpoint = await this.repository.findOne({ where: { id } });
+
     await this.repository.update(id, data);
+
+    // Invalidate all caches related to this endpoint
+    if (oldEndpoint) {
+      await this.cache.del(`endpoint:key:${oldEndpoint.incomingKey}`);
+      await this.cache.del(`endpoint:id:${id}`);
+    }
+
     return this.findById(id) as Promise<Endpoint>;
   }
 
   async toggleActive(id: string, isActive: boolean): Promise<void> {
+    const endpoint = await this.repository.findOne({ where: { id } });
     await this.repository.update(id, { isActive });
+
+    // Invalidate
+    if (endpoint) {
+      await this.cache.del(`endpoint:key:${endpoint.incomingKey}`);
+      await this.cache.del(`endpoint:id:${id}`);
+    }
   }
 
   async softDelete(id: string): Promise<void> {
+    const endpoint = await this.repository.findOne({ where: { id } });
     await this.repository.update(id, { deletedAt: new Date() });
+
+    // Invalidate
+    if (endpoint) {
+      await this.cache.del(`endpoint:key:${endpoint.incomingKey}`);
+      await this.cache.del(`endpoint:id:${id}`);
+    }
   }
 }

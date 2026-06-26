@@ -23,7 +23,12 @@ import { EventsController } from './infrastructure/controllers/events.controller
         exchanges: [
           {
             name: 'kiosk.webhooks',
-            type: 'topic',
+            type: 'x-delayed-message',
+            options: {
+              arguments: {
+                'x-delayed-type': 'topic',
+              },
+            },
           },
           {
             name: 'kiosk.webhooks.dlx',

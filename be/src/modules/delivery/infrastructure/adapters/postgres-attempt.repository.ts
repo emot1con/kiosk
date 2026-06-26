@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { IAttemptRepository } from '../../domain/ports/attempt-repository.port';
 import { DeliveryAttempt } from '../../domain/entities/delivery-attempt.entity';
 import { AttemptOrmEntity } from './attempt.orm-entity';
+import { RedisCacheService } from '../../../../shared/infrastructure/redis-cache.service';
 
 @Injectable()
 export class PostgresAttemptRepository implements IAttemptRepository {
   constructor(
     @InjectRepository(AttemptOrmEntity)
     private readonly repository: Repository<AttemptOrmEntity>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   private mapToDomain(ormEntity: AttemptOrmEntity): DeliveryAttempt {
@@ -55,12 +57,21 @@ export class PostgresAttemptRepository implements IAttemptRepository {
   }
 
   async getAvgLatencyByEndpoint(endpointId: string): Promise<number> {
+    const cacheKey = `attempts:latency:${endpointId}`;
+
+    const cached = await this.cache.get<number>(cacheKey);
+    if (cached !== null) return cached;
+
     const result = await this.repository.createQueryBuilder('attempt')
       .select('AVG(attempt.latency_ms)', 'avg')
       .innerJoin('events', 'event', 'event.id = attempt.event_id')
       .where('event.endpoint_id = :endpointId', { endpointId })
       .getRawOne();
       
-    return result && result.avg ? Math.round(parseFloat(result.avg)) : 0;
+    const avg = result && result.avg ? Math.round(parseFloat(result.avg)) : 0;
+
+    await this.cache.set(cacheKey, avg, 60);
+
+    return avg;
   }
 }

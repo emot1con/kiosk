@@ -4,12 +4,14 @@ import { Repository, IsNull, In } from 'typeorm';
 import { IEventRepository } from '../../domain/ports/event-repository.port';
 import { WebhookEvent } from '../../domain/entities/event.entity';
 import { EventOrmEntity } from './event.orm-entity';
+import { RedisCacheService } from '../../../../shared/infrastructure/redis-cache.service';
 
 @Injectable()
 export class PostgresEventRepository implements IEventRepository {
   constructor(
     @InjectRepository(EventOrmEntity)
     private readonly repository: Repository<EventOrmEntity>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   private mapToDomain(ormEntity: EventOrmEntity): WebhookEvent {
@@ -103,6 +105,11 @@ export class PostgresEventRepository implements IEventRepository {
   }
 
   async getStatusCounts(userId: string): Promise<{ pending: number; delivered: number; retrying: number; dead: number }> {
+    const cacheKey = `events:counts:${userId}`;
+
+    const cached = await this.cache.get<{ pending: number; delivered: number; retrying: number; dead: number }>(cacheKey);
+    if (cached) return cached;
+
     const result = await this.repository.createQueryBuilder('event')
       .select('event.status', 'status')
       .addSelect('COUNT(event.id)', 'count')
@@ -118,6 +125,9 @@ export class PostgresEventRepository implements IEventRepository {
         counts[row.status] = parseInt(row.count, 10);
       }
     });
+
+    await this.cache.set(cacheKey, counts, 30);
+
     return counts;
   }
 
