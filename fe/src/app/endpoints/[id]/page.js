@@ -121,7 +121,7 @@ export default function EndpointDetailPage() {
           }
         }
       };
-    } else {
+    } else if (simulationProvider === "GitHub") {
       payload = {
         action: "opened",
         issue: {
@@ -130,6 +130,22 @@ export default function EndpointDetailPage() {
           title: "Bug: Webhook failing to retry properly",
           user: { login: "numpyh" }
         }
+      };
+    } else if (simulationProvider === "Midtrans") {
+      payload = {
+        currency: "IDR",
+        order_id: "test_simulasi_" + Math.random().toString(36).substr(2, 9),
+        merchant_id: "G023534862",
+        status_code: "200",
+        fraud_status: "accept",
+        gross_amount: "105000.00",
+        payment_type: "gopay",
+        signature_key: "dummy_signature_will_fail_in_destination",
+        status_message: "midtrans payment notification",
+        transaction_id: "513f1f01-c9da-474c-9fc9-d5c64364b709",
+        settlement_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        transaction_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        transaction_status: "settlement"
       };
     }
 
@@ -329,6 +345,14 @@ export default function EndpointDetailPage() {
               disabled={isSimulating}
             >
               GitHub
+            </button>
+            <button 
+              type="button" 
+              className={`btn btn-sm ${simulationProvider === "Midtrans" ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => setSimulationProvider("Midtrans")}
+              disabled={isSimulating}
+            >
+              Midtrans
             </button>
           </div>
           
