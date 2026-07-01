@@ -2,7 +2,7 @@
 <div align="center">
   <h1 align="center">Kiosk</h1>
   <p align="center">
-    <strong>Enterprise-grade Webhook Management & Delivery Middleware</strong>
+    <strong>Webhook Management & Delivery Middleware</strong>
     <br />
     Robust, scalable, and resilient webhook proxy designed to handle high-volume event ingestion, signature validation, and reliable delivery with automatic retries.
   </p>
