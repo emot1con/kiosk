@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { EndpointsModule } from './modules/endpoints/endpoints.module';
 import { EventsModule } from './modules/events/events.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { DeliveryModule } from './modules/delivery/delivery.module';
     EndpointsModule,
     EventsModule,
     DeliveryModule,
+    AnalyticsModule,
     SharedModule,
   ],
   controllers: [AppController],

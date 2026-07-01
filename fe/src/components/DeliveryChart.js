@@ -39,47 +39,87 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-export default function DeliveryChart({ events = [] }) {
+export default function DeliveryChart({ timeseries = [], timeseriesHours = 24, setTimeseriesHours }) {
   const chartData = useMemo(() => {
+    // We already have pre-aggregated bucket data from the backend,
+    // but the backend might omit empty hours.
+    // Let's create an array of `timeseriesHours` hours up to now and fill in the data.
     const now = new Date();
     const buckets = [];
 
-    for (let i = 23; i >= 0; i--) {
+    // Backend provides { timestamp: string, delivered: number, failed: number }
+    for (let i = timeseriesHours - 1; i >= 0; i--) {
       const hourStart = new Date(now);
       hourStart.setHours(now.getHours() - i, 0, 0, 0);
-      const hourEnd = new Date(hourStart);
-      hourEnd.setHours(hourStart.getHours() + 1);
-
-      const hourLabel = hourStart.toLocaleTimeString("id-ID", {
+      
+      let hourLabel = hourStart.toLocaleTimeString("id-ID", {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
       });
 
-      const hourEvents = events.filter((e) => {
-        const created = new Date(e.createdAt);
-        return created >= hourStart && created < hourEnd;
+      // If it's more than 24 hours, add date to label for tooltip clarity
+      if (timeseriesHours > 24) {
+        const dateStr = hourStart.toLocaleDateString("id-ID", { day: 'numeric', month: 'short' });
+        hourLabel = `${dateStr} ${hourLabel}`;
+      }
+
+      // Find if we have backend data for this hour bucket
+      const bucketData = timeseries.find(t => {
+        const tDate = new Date(t.timestamp);
+        return tDate.getHours() === hourStart.getHours() && 
+               tDate.getDate() === hourStart.getDate() &&
+               tDate.getMonth() === hourStart.getMonth() &&
+               tDate.getFullYear() === hourStart.getFullYear();
       });
 
       buckets.push({
         hour: hourLabel,
-        delivered: hourEvents.filter((e) => e.status === "delivered").length,
-        failed: hourEvents.filter(
-          (e) => e.status === "dead" || e.status === "retrying"
-        ).length,
+        delivered: bucketData ? bucketData.delivered : 0,
+        failed: bucketData ? bucketData.failed : 0,
       });
     }
 
     return buckets;
-  }, [events]);
+  }, [timeseries, timeseriesHours]);
 
   return (
     <div className={`${styles.chartContainer} glass-card`}>
       <div className={styles.chartHeader}>
-        <h2 className={styles.chartTitle}>
-          <TrendingUp size={15} style={{ color: "var(--accent-primary)" }} />
-          <span>Delivery Trend (24h)</span>
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <h2 className={styles.chartTitle}>
+            <TrendingUp size={15} style={{ color: "var(--accent-primary)" }} />
+            <span>Delivery Trend</span>
+          </h2>
+          {setTimeseriesHours && (
+            <div style={{ display: "flex", gap: "0.25rem", background: "var(--bg-tertiary)", padding: "0.2rem", borderRadius: "var(--radius-sm)" }}>
+              <button 
+                onClick={() => setTimeseriesHours(24)}
+                style={{ 
+                  background: timeseriesHours === 24 ? "var(--bg-secondary)" : "transparent",
+                  color: timeseriesHours === 24 ? "var(--text-primary)" : "var(--text-secondary)",
+                  border: "none", padding: "0.2rem 0.5rem", borderRadius: "var(--radius-xs)", fontSize: "0.75rem", cursor: "pointer", fontWeight: timeseriesHours === 24 ? 600 : 400
+                }}
+              >24h</button>
+              <button 
+                onClick={() => setTimeseriesHours(168)}
+                style={{ 
+                  background: timeseriesHours === 168 ? "var(--bg-secondary)" : "transparent",
+                  color: timeseriesHours === 168 ? "var(--text-primary)" : "var(--text-secondary)",
+                  border: "none", padding: "0.2rem 0.5rem", borderRadius: "var(--radius-xs)", fontSize: "0.75rem", cursor: "pointer", fontWeight: timeseriesHours === 168 ? 600 : 400
+                }}
+              >7d</button>
+              <button 
+                onClick={() => setTimeseriesHours(720)}
+                style={{ 
+                  background: timeseriesHours === 720 ? "var(--bg-secondary)" : "transparent",
+                  color: timeseriesHours === 720 ? "var(--text-primary)" : "var(--text-secondary)",
+                  border: "none", padding: "0.2rem 0.5rem", borderRadius: "var(--radius-xs)", fontSize: "0.75rem", cursor: "pointer", fontWeight: timeseriesHours === 720 ? 600 : 400
+                }}
+              >30d</button>
+            </div>
+          )}
+        </div>
         <div className={styles.chartLegend}>
           <span className={styles.legendItem}>
             <span

@@ -10,25 +10,34 @@ export function DataProvider({ children }) {
   const [endpoints, setEndpoints] = useState([]);
   const [events, setEvents] = useState([]);
   const [attempts, setAttempts] = useState([]);
+  const [analyticsMetrics, setAnalyticsMetrics] = useState(null);
+  const [analyticsTimeseries, setAnalyticsTimeseries] = useState([]);
+  const [timeseriesHours, setTimeseriesHours] = useState(24);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const [endpointsRes, eventsRes, attemptsRes] = await Promise.all([
+      const [endpointsRes, eventsRes, attemptsRes, metricsRes, timeseriesRes, healthRes] = await Promise.all([
         apiClient.get('/endpoints'),
-        apiClient.get('/events'),
-        apiClient.get('/attempts')
+        apiClient.get('/events?limit=20'), // We should limit events fetching eventually, keeping limit param just in case backend supports it
+        apiClient.get('/attempts?limit=20'),
+        apiClient.get('/analytics/metrics'),
+        apiClient.get(`/analytics/timeseries?hours=${timeseriesHours}`),
+        apiClient.get('/analytics/endpoints-health')
       ]);
 
+      // Use backend stats instead of client-side stats
+      const healthData = healthRes.data;
       const endpointsData = endpointsRes.data.map(ep => {
-        const epEvents = eventsRes.data.filter(e => e.endpointId === ep.id);
-        const successCount = epEvents.filter(e => e.status === 'delivered').length;
-        return { ...ep, eventsCount: epEvents.length, successCount };
+        const health = healthData.find(h => h.endpointId === ep.id) || { eventsCount: 0, successCount: 0 };
+        return { ...ep, eventsCount: health.eventsCount, successCount: health.successCount };
       });
 
       setEndpoints(endpointsData);
       setEvents(eventsRes.data);
       setAttempts(attemptsRes.data);
+      setAnalyticsMetrics(metricsRes.data);
+      setAnalyticsTimeseries(timeseriesRes.data);
     } catch (err) {
       console.error("Failed to fetch data", err);
     }
@@ -47,7 +56,7 @@ export function DataProvider({ children }) {
     } else {
       setIsDataLoading(false);
     }
-  }, []);
+  }, [timeseriesHours]);
 
   // Background Processor removed, we now rely on real backend and polling.
 
@@ -145,6 +154,10 @@ export function DataProvider({ children }) {
       endpoints,
       events,
       attempts,
+      analyticsMetrics,
+      analyticsTimeseries,
+      timeseriesHours,
+      setTimeseriesHours,
       isDataLoading,
       addEndpoint,
       deleteEndpoint,

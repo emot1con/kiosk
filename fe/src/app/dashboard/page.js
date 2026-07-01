@@ -19,9 +19,17 @@ import { formatRelativeTime } from "@/lib/utils";
 import styles from "./dashboard.module.css";
 
 export default function DashboardPage() {
-  const { endpoints, events, isDataLoading } = useData();
+  const { 
+    endpoints, 
+    events, 
+    analyticsMetrics, 
+    analyticsTimeseries, 
+    timeseriesHours,
+    setTimeseriesHours,
+    isDataLoading 
+  } = useData();
 
-  if (isDataLoading) {
+  if (isDataLoading || !analyticsMetrics) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
         <p style={{ color: "var(--text-secondary)" }}>Loading dashboard data...</p>
@@ -29,11 +37,11 @@ export default function DashboardPage() {
     );
   }
 
-  // Calculate statistics
-  const totalEvents = events.length;
-  const deliveredEvents = events.filter(e => e.status === "delivered").length;
-  const retryingEvents = events.filter(e => e.status === "retrying").length;
-  const deadEvents = events.filter(e => e.status === "dead").length;
+  // Use backend aggregated statistics
+  const totalEvents = analyticsMetrics.totalEvents || 0;
+  const deliveredEvents = analyticsMetrics.deliveredEvents || 0;
+  const retryingEvents = analyticsMetrics.retryingEvents || 0;
+  const deadEvents = analyticsMetrics.deadEvents || 0;
 
   // Get recent 6 events for dashboard preview
   const recentEvents = [...events]
@@ -82,7 +90,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Delivery Analytics Chart */}
-      <DeliveryChart events={events} />
+      <DeliveryChart 
+        timeseries={analyticsTimeseries} 
+        timeseriesHours={timeseriesHours}
+        setTimeseriesHours={setTimeseriesHours}
+      />
 
       {/* Main Grid: Recent Events and Endpoint Health */}
       <div className={styles.mainGrid}>

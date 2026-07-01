@@ -10,6 +10,7 @@
 .info {
   font-size: 0.8rem;
   color: var(--text-secondary);
+  margin-left: 1.5rem;
 }
 
 .infoRange {
