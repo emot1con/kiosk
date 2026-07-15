@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, IsNull, In, DataSource } from 'typeorm';
 import { IEventRepository } from '../../domain/ports/event-repository.port';
 import { WebhookEvent } from '../../domain/entities/event.entity';
 import { EventOrmEntity } from './event.orm-entity';
+import { UserEventStatsOrmEntity } from './user-event-stats.orm-entity';
 import { RedisCacheService } from '../../../../shared/infrastructure/redis-cache.service';
 
 @Injectable()
@@ -11,7 +12,10 @@ export class PostgresEventRepository implements IEventRepository {
   constructor(
     @InjectRepository(EventOrmEntity)
     private readonly repository: Repository<EventOrmEntity>,
+    @InjectRepository(UserEventStatsOrmEntity)
+    private readonly statsRepository: Repository<UserEventStatsOrmEntity>,
     private readonly cache: RedisCacheService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private mapToDomain(ormEntity: EventOrmEntity): WebhookEvent {
@@ -46,15 +50,29 @@ export class PostgresEventRepository implements IEventRepository {
     return ormEntities.map(e => this.mapToDomain(e));
   }
 
-  async findByUserId(userId: string, filters?: any): Promise<WebhookEvent[]> {
-    const ormEntities = await this.repository.createQueryBuilder('event')
+  async findByUserId(userId: string, filters?: { page?: number; limit?: number }): Promise<{ data: WebhookEvent[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
+    const page = filters?.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters?.limit && filters.limit > 0 ? filters.limit : 15;
+    const skip = (page - 1) * limit;
+
+    const [ormEntities, total] = await this.repository.createQueryBuilder('event')
       .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpoint_id')
       .where('endpoint.user_id = :userId', { userId })
       .andWhere('event.deleted_at IS NULL')
       .orderBy('event.created_at', 'DESC')
-      .getMany();
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
       
-    return ormEntities.map(e => this.mapToDomain(e));
+    return {
+      data: ormEntities.map(e => this.mapToDomain(e)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   async create(data: Partial<WebhookEvent>): Promise<WebhookEvent> {
@@ -105,11 +123,18 @@ export class PostgresEventRepository implements IEventRepository {
   }
 
   async getStatusCounts(userId: string): Promise<{ pending: number; delivered: number; retrying: number; dead: number }> {
-    const cacheKey = `events:counts:${userId}`;
+    // O(1) read from pre-aggregated counter table — no full scan
+    const stats = await this.statsRepository.findOne({ where: { userId } });
+    if (stats) {
+      return {
+        pending:   stats.pending,
+        delivered: stats.delivered,
+        retrying:  stats.retrying,
+        dead:      stats.dead,
+      };
+    }
 
-    const cached = await this.cache.get<{ pending: number; delivered: number; retrying: number; dead: number }>(cacheKey);
-    if (cached) return cached;
-
+    // Fallback: if counter row doesn't exist yet, compute and create it
     const result = await this.repository.createQueryBuilder('event')
       .select('event.status', 'status')
       .addSelect('COUNT(event.id)', 'count')
@@ -118,17 +143,59 @@ export class PostgresEventRepository implements IEventRepository {
       .andWhere('event.deleted_at IS NULL')
       .groupBy('event.status')
       .getRawMany();
-      
+
     const counts = { pending: 0, delivered: 0, retrying: 0, dead: 0 };
     result.forEach(row => {
       if (row.status in counts) {
-        counts[row.status] = parseInt(row.count, 10);
+        counts[row.status as keyof typeof counts] = parseInt(row.count, 10);
       }
     });
 
-    await this.cache.set(cacheKey, counts, 30);
+    const total = counts.pending + counts.delivered + counts.retrying + counts.dead;
+    await this.statsRepository.upsert(
+      { userId, total, ...counts },
+      ['userId'],
+    );
 
     return counts;
+  }
+
+  /**
+   * Increment counter when a new event is created (status = pending).
+   * Called from IngressService after create().
+   */
+  async incrementStat(userId: string, status: 'pending'): Promise<void> {
+    await this.dataSource.query(
+      `INSERT INTO user_event_stats (user_id, total, pending, delivered, retrying, dead)
+       VALUES ($1, 1, 1, 0, 0, 0)
+       ON CONFLICT (user_id) DO UPDATE SET
+         total   = user_event_stats.total   + 1,
+         pending = user_event_stats.pending + 1,
+         updated_at = NOW()`,
+      [userId],
+    );
+  }
+
+  /**
+   * Atomically transition counters when event status changes.
+   * @param userId   - owner of the event
+   * @param from     - previous status (before lock/processing)
+   * @param to       - new status
+   */
+  async transitionStat(
+    userId: string,
+    from: 'pending' | 'retrying',
+    to: 'delivered' | 'retrying' | 'dead',
+  ): Promise<void> {
+    await this.dataSource.query(
+      `INSERT INTO user_event_stats (user_id, total, pending, delivered, retrying, dead)
+       VALUES ($1, 0, 0, 0, 0, 0)
+       ON CONFLICT (user_id) DO UPDATE SET
+         "${from}" = GREATEST(user_event_stats."${from}" - 1, 0),
+         "${to}"   = user_event_stats."${to}"   + 1,
+         updated_at = NOW()`,
+      [userId],
+    );
   }
 
   async resetAllDeadEvents(userId: string): Promise<string[]> {

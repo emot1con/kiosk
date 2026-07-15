@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Inject } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Inject, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ATTEMPT_REPOSITORY } from '../../domain/ports/attempt-repository.port';
 import type { IAttemptRepository } from '../../domain/ports/attempt-repository.port';
@@ -12,9 +12,15 @@ export class AttemptsController {
   ) {}
 
   @Get()
-  async getAttempts(@Request() req) {
+  async getAttempts(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
     const userId = req.user.id;
-    const attempts = await this.attemptRepository.findByUserId(userId);
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 15;
+    
+    const attempts = await this.attemptRepository.findByUserId(userId, {
+      page: pageNum,
+      limit: limitNum
+    });
     return attempts;
   }
 }

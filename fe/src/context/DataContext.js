@@ -34,8 +34,8 @@ export function DataProvider({ children }) {
       });
 
       setEndpoints(endpointsData);
-      setEvents(eventsRes.data);
-      setAttempts(attemptsRes.data);
+      setEvents(eventsRes.data.data ? eventsRes.data.data : eventsRes.data);
+      setAttempts(attemptsRes.data.data ? attemptsRes.data.data : attemptsRes.data);
       setAnalyticsMetrics(metricsRes.data);
       setAnalyticsTimeseries(timeseriesRes.data);
     } catch (err) {

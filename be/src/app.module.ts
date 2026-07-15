@@ -28,6 +28,9 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
         autoLoadEntities: true,
         // Synchronize false because we use raw SQL migrations
         synchronize: false,
+        extra: {
+          max: 30, // 8 cluster workers × 30 = 240 connections (under PG's 300 limit)
+        },
       }),
       inject: [ConfigService],
     }),

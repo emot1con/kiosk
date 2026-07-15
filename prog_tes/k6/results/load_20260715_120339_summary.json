@@ -1,0 +1,206 @@
+{
+    "setup_data": {
+        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NmUwMThlNC0zOWJlLTQ0MjAtOTAyMS04M2IyMzU5ODRmMDEiLCJlbWFpbCI6ImxvYWR0ZXN0XzE3ODQwOTE4MTkyMjdfbG9hZEB0ZXN0LmxvY2FsIiwiaWF0IjoxNzg0MDkxODE5LCJleHAiOjE3ODY2ODM4MTl9.NH5iB3C-aFbud84jY83r5uofs79Nju2FZffkouC3YEs",
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NmUwMThlNC0zOWJlLTQ0MjAtOTAyMS04M2IyMzU5ODRmMDEiLCJlbWFpbCI6ImxvYWR0ZXN0XzE3ODQwOTE4MTkyMjdfbG9hZEB0ZXN0LmxvY2FsIiwiaWF0IjoxNzg0MDkxODE5LCJleHAiOjE3ODQxNzgyMTl9.3wjMs8zMrknvsCE1tPVUro2hfeMV1aO0VkX8jQ_-AwE",
+        "apiKey": null,
+        "email": "loadtest_1784091819227_load@test.local",
+        "endpoint": {
+            "isActive": true,
+            "name": "Load Test Shared Endpoint",
+            "provider": "twilio",
+            "deletedAt": null,
+            "destinationUrl": "http://localhost:8080/webhook/65hnyx",
+            "incomingKey": "c9b6722d4c9b434c6e13e2ba920efb61",
+            "signingSecret": "whsec_PquGwEviWjnZiuxNj4BuR2FEyS85GOlt",
+            "updatedAt": "2026-07-15T05:03:39.594Z",
+            "userId": "76e018e4-39be-4420-9021-83b235984f01",
+            "createdAt": "2026-07-15T05:03:39.594Z",
+            "id": "71dacabd-dad9-4742-bd2f-3eff6e64e081"
+        },
+        "password": "LoadTest@1234"
+    },
+    "root_group": {
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "name": "setup",
+                "path": "::setup",
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {},
+                "checks": {
+                        "register 201": {
+                            "id": "09b4317cf1f0cccb084b00576cc103e4",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "register 201",
+                            "path": "::setup::register 201"
+                        },
+                        "login 200": {
+                            "name": "login 200",
+                            "path": "::setup::login 200",
+                            "id": "647055af8ffe21e58084ae4b140cdda0",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            }
+        },
+        "checks": {
+            "webhook-ingress status 2xx": {
+                "name": "webhook-ingress status 2xx",
+                "path": "::webhook-ingress status 2xx",
+                "id": "3bbefc1df0c47e045a49177b4f054a6d",
+                "passes": 40256,
+                "fails": 0
+            },
+            "list-events status 2xx": {
+                "name": "list-events status 2xx",
+                "path": "::list-events status 2xx",
+                "id": "789ae5552c21bf14306d26d39bf09cec",
+                "passes": 2081,
+                "fails": 0
+            }
+        },
+        "name": "",
+        "path": ""
+    },
+    "metrics": {
+        "vus_max": {
+            "value": 150,
+            "min": 150,
+            "max": 150
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 150
+        },
+        "http_req_duration": {
+            "p(95)": 1843.60565715,
+            "avg": 963.3087621584746,
+            "min": 8.161774,
+            "med": 855.841438,
+            "max": 27026.789329,
+            "p(90)": 1607.3284884,
+            "thresholds": {
+                "p(90)<1000": true,
+                "p(99)<3000": false
+            }
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 42340,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0
+        },
+        "http_req_duration{name:list-events}": {
+            "min": 8.161774,
+            "med": 487.181933,
+            "max": 26329.683046,
+            "p(90)": 1208.583128,
+            "p(95)": 1431.569997,
+            "avg": 609.5269048116281,
+            "thresholds": {
+                "p(95)<1200": true
+            }
+        },
+        "http_reqs": {
+            "count": 42340,
+            "rate": 70.51532810438437
+        },
+        "checks": {
+            "passes": 42339,
+            "fails": 0,
+            "value": 1
+        },
+        "http_req_tls_handshaking": {
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0
+        },
+        "data_received": {
+            "count": 35326169,
+            "rate": 58834.114258524605
+        },
+        "http_req_duration{name:webhook-ingress}": {
+            "avg": 981.6594953620072,
+            "min": 8.635915,
+            "med": 876.8701265,
+            "max": 27026.789329,
+            "p(90)": 1619.1270165,
+            "p(95)": 1853.8441292500002,
+            "thresholds": {
+                "p(95)<800": true
+            }
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 963.3087621584746,
+            "min": 8.161774,
+            "med": 855.841438,
+            "max": 27026.789329,
+            "p(90)": 1607.3284884,
+            "p(95)": 1843.60565715
+        },
+        "http_req_receiving": {
+            "avg": 0.0984634544874823,
+            "min": 0.01828,
+            "med": 0.0937035,
+            "max": 2.388654,
+            "p(90)": 0.1386521,
+            "p(95)": 0.15287104999999993
+        },
+        "data_sent": {
+            "count": 13833163,
+            "rate": 23038.49852778531
+        },
+        "iteration_duration": {
+            "avg": 1364.6058470294308,
+            "min": 114.398233,
+            "med": 1244.896551,
+            "max": 28480.658952,
+            "p(90)": 2053.577444,
+            "p(95)": 2322.35396
+        },
+        "http_req_sending": {
+            "avg": 0.038651477846008,
+            "min": 0.008073,
+            "med": 0.035909,
+            "max": 1.634643,
+            "p(90)": 0.05222809999999999,
+            "p(95)": 0.06061634999999997
+        },
+        "iterations": {
+            "count": 40256,
+            "rate": 67.04452168564235
+        },
+        "http_req_connecting": {
+            "avg": 0.0009229477798771849,
+            "min": 0,
+            "med": 0,
+            "max": 0.840345,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_blocked": {
+            "avg": 0.01097041273027872,
+            "min": 0.002144,
+            "med": 0.009063,
+            "max": 2.072899,
+            "p(90)": 0.0129651,
+            "p(95)": 0.014754049999999996
+        },
+        "http_req_waiting": {
+            "p(95)": 1843.46300845,
+            "avg": 963.171647226147,
+            "min": 8.066249,
+            "med": 855.706904,
+            "max": 27026.636754,
+            "p(90)": 1607.211479
+        }
+    }
+}

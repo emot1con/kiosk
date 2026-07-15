@@ -45,15 +45,29 @@ export class PostgresAttemptRepository implements IAttemptRepository {
     return ormEntities.map(e => this.mapToDomain(e));
   }
 
-  async findByUserId(userId: string): Promise<DeliveryAttempt[]> {
-    const ormEntities = await this.repository.createQueryBuilder('attempt')
+  async findByUserId(userId: string, filters?: { page?: number; limit?: number }): Promise<{ data: DeliveryAttempt[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
+    const page = filters?.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters?.limit && filters.limit > 0 ? filters.limit : 15;
+    const skip = (page - 1) * limit;
+
+    const [ormEntities, total] = await this.repository.createQueryBuilder('attempt')
       .innerJoin('events', 'event', 'event.id = attempt.event_id')
       .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpoint_id')
       .where('endpoint.user_id = :userId', { userId })
       .orderBy('attempt.attempted_at', 'DESC')
-      .getMany();
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
       
-    return ormEntities.map(e => this.mapToDomain(e));
+    return {
+      data: ormEntities.map(e => this.mapToDomain(e)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   async getAvgLatencyByEndpoint(endpointId: string): Promise<number> {

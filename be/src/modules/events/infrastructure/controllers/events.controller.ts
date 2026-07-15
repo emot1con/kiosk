@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, UseGuards, Request, Inject, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Param, UseGuards, Request, Inject, NotFoundException, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { EVENT_REPOSITORY } from '../../domain/ports/event-repository.port';
 import type { IEventRepository } from '../../domain/ports/event-repository.port';
@@ -20,9 +20,15 @@ export class EventsController {
   ) {}
 
   @Get()
-  async getEvents(@Request() req) {
+  async getEvents(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
     const userId = req.user.id;
-    const events = await this.eventRepository.findByUserId(userId);
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 15;
+    
+    const events = await this.eventRepository.findByUserId(userId, { 
+      page: pageNum, 
+      limit: limitNum 
+    });
     return events;
   }
 

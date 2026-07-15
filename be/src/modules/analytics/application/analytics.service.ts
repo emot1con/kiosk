@@ -13,10 +13,13 @@ export class AnalyticsService {
     private readonly attemptRepo: Repository<AttemptOrmEntity>,
   ) {}
 
-  async getMetrics(endpointId?: string) {
+  async getMetrics(userId: string, endpointId?: string) {
     const query = this.eventRepo.createQueryBuilder('event');
+    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
+         .where('endpoint.user_id = :userId', { userId });
+         
     if (endpointId) {
-      query.where('event.endpointId = :endpointId', { endpointId });
+      query.andWhere('event.endpointId = :endpointId', { endpointId });
     }
 
     // Getting counts using conditional aggregation
@@ -38,9 +41,12 @@ export class AnalyticsService {
 
     // Get average latency
     const latencyQuery = this.attemptRepo.createQueryBuilder('attempt');
+    latencyQuery.innerJoin('events', 'event', 'event.id = attempt.eventId')
+                .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
+                .where('endpoint.user_id = :userId', { userId });
+
     if (endpointId) {
-      latencyQuery.innerJoin('events', 'event', 'event.id = attempt.eventId')
-        .where('event.endpointId = :endpointId', { endpointId });
+      latencyQuery.andWhere('event.endpointId = :endpointId', { endpointId });
     }
     
     latencyQuery.select('AVG(attempt.latencyMs)', 'average_latency');
@@ -57,12 +63,14 @@ export class AnalyticsService {
     };
   }
 
-  async getTimeSeries(endpointId?: string, hours: number = 24) {
+  async getTimeSeries(userId: string, endpointId?: string, hours: number = 24) {
     // Generate buckets for the last N hours
     const query = this.eventRepo.createQueryBuilder('event');
+    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
+         .where('endpoint.user_id = :userId', { userId });
     
     if (endpointId) {
-      query.where('event.endpointId = :endpointId', { endpointId });
+      query.andWhere('event.endpointId = :endpointId', { endpointId });
     }
     
     // Postgres specific: date_trunc to hour
@@ -87,8 +95,10 @@ export class AnalyticsService {
     }));
   }
 
-  async getEndpointsHealth() {
+  async getEndpointsHealth(userId: string) {
     const query = this.eventRepo.createQueryBuilder('event');
+    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
+         .where('endpoint.user_id = :userId', { userId });
     query.select([
       'event.endpointId as endpoint_id',
       'COUNT(*) as events_count',
