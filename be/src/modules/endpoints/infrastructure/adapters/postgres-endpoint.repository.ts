@@ -17,7 +17,6 @@ export class PostgresEndpointRepository implements IEndpointRepository {
   private mapToDomain(ormEntity: EndpointOrmEntity): Endpoint {
     return new Endpoint({
       id: ormEntity.id,
-      userId: ormEntity.userId,
       name: ormEntity.name,
       incomingKey: ormEntity.incomingKey,
       destinationUrl: ormEntity.destinationUrl,
@@ -45,9 +44,9 @@ export class PostgresEndpointRepository implements IEndpointRepository {
     return endpoint;
   }
 
-  async findByUserId(userId: string): Promise<Endpoint[]> {
+  async findAll(): Promise<Endpoint[]> {
     const ormEntities = await this.repository.find({ 
-      where: { userId, deletedAt: IsNull() },
+      where: { deletedAt: IsNull() },
       order: { createdAt: 'DESC' }
     });
     return ormEntities.map(e => this.mapToDomain(e));
@@ -70,7 +69,6 @@ export class PostgresEndpointRepository implements IEndpointRepository {
 
   async create(data: Partial<Endpoint>): Promise<Endpoint> {
     const ormEntity = this.repository.create({
-      userId: data.userId,
       name: data.name,
       incomingKey: data.incomingKey,
       destinationUrl: data.destinationUrl,
@@ -83,7 +81,7 @@ export class PostgresEndpointRepository implements IEndpointRepository {
   }
 
   async update(id: string, data: Partial<Endpoint>): Promise<Endpoint> {
-    // Fetch old data to get incomingKey & userId for cache invalidation
+    // Fetch old data to get incomingKey for cache invalidation
     const oldEndpoint = await this.repository.findOne({ where: { id } });
 
     await this.repository.update(id, data);

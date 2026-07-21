@@ -53,7 +53,7 @@ export default function DashboardPage() {
       <div className={styles.headerRow}>
         <div className={styles.titleSection}>
           <h1 className={styles.pageTitle}>Dashboard Overview</h1>
-          <p className={styles.pageSubtitle}>Pantau performa dan kehandalan webhook pengiriman Anda</p>
+          <p className={styles.pageSubtitle}>Monitor your webhook delivery performance and reliability</p>
         </div>
         <Link href="/endpoints" className="btn btn-primary">
           <Plus size={18} />
@@ -111,9 +111,9 @@ export default function DashboardPage() {
           {recentEvents.length === 0 ? (
             <div className={styles.emptyState}>
               <Activity size={40} style={{ opacity: 0.3 }} />
-              <p>Belum ada webhook event yang masuk.</p>
+              <p>No webhook events received yet.</p>
               <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                Kirim webhook payload ke salah satu endpoint untuk memulai.
+                Send a webhook payload to one of your endpoints to get started.
               </p>
             </div>
           ) : (
@@ -178,9 +178,9 @@ export default function DashboardPage() {
           {endpoints.length === 0 ? (
             <div className={styles.emptyState} style={{ padding: "2rem 1rem" }}>
               <Webhook size={32} style={{ opacity: 0.3 }} />
-              <p style={{ fontSize: "0.9rem" }}>Belum ada endpoint.</p>
+              <p style={{ fontSize: "0.9rem" }}>No endpoints configured.</p>
               <Link href="/endpoints" className="btn btn-primary btn-sm" style={{ marginTop: "0.5rem" }}>
-                Buat Endpoint
+                Create Endpoint
               </Link>
             </div>
           ) : (

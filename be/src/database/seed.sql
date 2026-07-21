@@ -8,28 +8,13 @@ BEGIN;
 TRUNCATE TABLE delivery_attempts CASCADE;
 TRUNCATE TABLE events CASCADE;
 TRUNCATE TABLE endpoints CASCADE;
-TRUNCATE TABLE users CASCADE;
 
--- 2. Insert Mock User
--- ID: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
--- password_hash is bcrypt hash of "password123"
-INSERT INTO users (id, email, password_hash, api_key_hash, created_at, updated_at)
-VALUES (
-    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    'user@kiosk.dev',
-    '$2b$10$y5H49fVvY2P6W8G7YnL2reG/hU2tXzBPlH1eWc9/tP1X.N8D9fB2e',
-    '$2b$10$y5H49fVvY2P6W8G7YnL2reG/hU2tXzBPlH1eWc9/tP1X.N8D9fB2e',
-    '2026-06-18T10:00:00Z',
-    '2026-06-18T10:00:00Z'
-);
-
--- 3. Insert Mock Endpoints
+-- 2. Insert Mock Endpoints
 -- IDs: b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22, c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33, d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44
-INSERT INTO endpoints (id, user_id, name, incoming_key, destination_url, is_active, created_at, updated_at)
+INSERT INTO endpoints (id, name, incoming_key, destination_url, is_active, created_at, updated_at)
 VALUES 
 (
     'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
-    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     'stripe-prod',
     'abc127stripe',
     'https://api.mycommerce.com/webhooks/stripe',
@@ -39,7 +24,6 @@ VALUES
 ),
 (
     'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33',
-    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     'gh-webhook',
     'xyz456github',
     'https://api.mycommerce.com/webhooks/github',
@@ -49,7 +33,6 @@ VALUES
 ),
 (
     'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44',
-    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     'midtrans-payment',
     'mdt999payment',
     'https://api.mycommerce.com/webhooks/midtrans',
@@ -58,7 +41,7 @@ VALUES
     '2026-06-20T08:15:00Z'
 );
 
--- 4. Insert Mock Events
+-- 3. Insert Mock Events
 -- IDs: e0eebc99-9c0b-4ef8-bb6d-6bb9bd380ae1, e0eebc99-9c0b-4ef8-bb6d-6bb9bd380ae2, e0eebc99-9c0b-4ef8-bb6d-6bb9bd380ae3, e0eebc99-9c0b-4ef8-bb6d-6bb9bd380ae4, e0eebc99-9c0b-4ef8-bb6d-6bb9bd380ae5
 INSERT INTO events (id, endpoint_id, provider, status, headers, payload, retry_count, max_retries, next_retry_at, created_at, updated_at)
 VALUES
@@ -128,7 +111,7 @@ VALUES
     NOW() - INTERVAL '240 minutes'
 );
 
--- 5. Insert Mock Attempts
+-- 4. Insert Mock Attempts
 INSERT INTO delivery_attempts (id, event_id, response_status, response_body, latency_ms, attempted_at)
 VALUES
 (
@@ -221,5 +204,10 @@ VALUES
     110,
     NOW() - INTERVAL '240 minutes'
 );
+
+-- 5. Seed global_event_stats (if not exists)
+INSERT INTO global_event_stats (id, total, pending, delivered, retrying, dead)
+VALUES ('global', 0, 0, 0, 0, 0)
+ON CONFLICT (id) DO NOTHING;
 
 COMMIT;

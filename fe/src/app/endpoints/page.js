@@ -54,7 +54,7 @@ export default function EndpointsPage() {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setCopiedType(type);
-    showToast(type === "source" ? "Webhook Source URL berhasil disalin!" : "Destination URL berhasil disalin!", "success");
+    showToast(type === "source" ? "Webhook Source URL copied!" : "Destination URL copied!", "success");
     setTimeout(() => {
       setCopiedId(null);
       setCopiedType(null);
@@ -62,9 +62,9 @@ export default function EndpointsPage() {
   };
 
   const handleDelete = (id, name) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus endpoint "${name}"?\nSemua event history untuk endpoint ini juga akan dihapus.`)) {
+    if (confirm(`Are you sure you want to delete endpoint "${name}"?\nAll event history for this endpoint will also be deleted.`)) {
       deleteEndpoint(id);
-      showToast(`Endpoint "${name}" berhasil dihapus.`, "success");
+      showToast(`Endpoint "${name}" deleted successfully.`, "success");
     }
   };
 
@@ -73,21 +73,21 @@ export default function EndpointsPage() {
     setFormError("");
 
     if (!newEpName || !newEpUrl) {
-      setFormError("Semua field wajib diisi");
+      setFormError("All fields are required");
       return;
     }
 
     try {
       new URL(newEpUrl);
     } catch (_) {
-      setFormError("Format URL tujuan tidak valid (harus diawali http:// atau https://)");
+      setFormError("Invalid destination URL format (must start with http:// or https://)");
       return;
     }
 
     const providerToSend = newEpProvider === "custom" ? customProvider.trim().toLowerCase() : newEpProvider;
 
     addEndpoint(newEpName, newEpUrl, providerToSend || null);
-    showToast(`Endpoint "${newEpName}" berhasil dibuat.`, "success");
+    showToast(`Endpoint "${newEpName}" created successfully.`, "success");
     
     // Reset form
     setNewEpName("");
@@ -113,7 +113,7 @@ export default function EndpointsPage() {
       <div className={styles.headerRow}>
         <div className={styles.titleSection}>
           <h1 className={styles.pageTitle}>Endpoints</h1>
-          <p className={styles.pageSubtitle}>Kelola URL aplikasi tujuan Anda dan pasang webhook url di provider</p>
+          <p className={styles.pageSubtitle}>Manage your webhook endpoints and delivery targets</p>
         </div>
         <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
           <Plus size={18} />
@@ -125,9 +125,9 @@ export default function EndpointsPage() {
         {endpoints.length === 0 ? (
           <EmptyState 
             icon={Webhook}
-            title="Belum Ada Endpoint"
-            description="Endpoint berfungsi untuk menerima payload webhook dari provider (Stripe/Github) dan meneruskannya ke server lokal/aplikasi Anda."
-            actionText="Buat Endpoint Pertama"
+            title="No Endpoints Yet"
+            description="Endpoints receive webhook payloads from providers (Stripe, GitHub, etc.) and forward them to your local server or application."
+            actionText="Create First Endpoint"
             onAction={() => setIsModalOpen(true)}
           />
         ) : (
@@ -170,7 +170,7 @@ export default function EndpointsPage() {
                               onChange={() => {
                                 toggleEndpointActive(ep.id);
                                 const nextState = ep.isActive !== false ? "Paused" : "Active";
-                                showToast(`Endpoint "${ep.name}" status diubah ke ${nextState}`, "info");
+                                showToast(`Endpoint "${ep.name}" status changed to ${nextState}`, "info");
                               }}
                             />
                             <span className={styles.slider}></span>
@@ -278,22 +278,22 @@ export default function EndpointsPage() {
       <div className="glass-card" style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
         <HelpCircle size={20} style={{ color: "var(--accent-primary)", flexShrink: 0, marginTop: "1px" }} />
         <div>
-          <h4 style={{ marginBottom: "0.25rem", color: "var(--text-primary)", fontSize: "0.9rem", fontWeight: 600 }}>Cara Kerja Webhook Reliability Layer</h4>
+          <h4 style={{ marginBottom: "0.25rem", color: "var(--text-primary)", fontSize: "0.9rem", fontWeight: 600 }}>How the Webhook Reliability Layer Works</h4>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-            1. Salin <strong>Webhook Source URL</strong> di atas dan pasang di dashboard provider Anda (misal Stripe Webhook settings atau GitHub repository webhook).<br />
-            2. Saat provider mengirimkan event, Kiosk akan menerima data tersebut, mengamankannya di database, mengembalikan response HTTP 200 dengan cepat, lalu memicu worker antrian untuk meneruskannya ke <strong>Destination URL</strong> milik server lokal Anda.<br />
-            3. Jika server Anda down, Kiosk akan menjadwalkan ulang (retry) pengiriman secara berkala dengan strategi eksponensial backoff.
+            1. Copy the <strong>Webhook Source URL</strong> above and configure it in your provider&apos;s dashboard (e.g. Stripe Webhook settings or GitHub repository webhooks).<br />
+            2. When the provider sends an event, Kiosk receives the payload, stores it in the database, returns an HTTP 200 response immediately, then triggers a queue worker to forward it to your <strong>Destination URL</strong>.<br />
+            3. If your server is down, Kiosk will automatically schedule retries with an exponential backoff strategy.
           </p>
         </div>
       </div>
 
       {/* Create Endpoint Modal */}
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Buat Endpoint Baru">
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Create New Endpoint">
         <form onSubmit={handleCreateEndpoint}>
           {formError && <div className={styles.error} style={{ marginBottom: "1rem" }}>{formError}</div>}
           
           <div className="form-group">
-            <label className="form-label" htmlFor="ep-name">Nama Endpoint</label>
+            <label className="form-label" htmlFor="ep-name">Endpoint Name</label>
             <input 
               id="ep-name"
               className="form-input" 
@@ -315,12 +315,12 @@ export default function EndpointsPage() {
               onChange={(e) => setNewEpUrl(e.target.value)}
             />
             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
-              URL server lokal atau production Anda yang bertugas memproses webhook.
+              Your local or production server URL that processes the webhook payload.
             </span>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="ep-provider">Provider Webhook</label>
+            <label className="form-label" htmlFor="ep-provider">Webhook Provider</label>
             <select
               id="ep-provider"
               className="form-input"
@@ -345,7 +345,7 @@ export default function EndpointsPage() {
                   {prov.name}
                 </option>
               ))}
-              <option value="custom">Lainnya...</option>
+              <option value="custom">Other...</option>
             </select>
 
             {showCustomInput && (
@@ -354,7 +354,7 @@ export default function EndpointsPage() {
                   id="custom-provider"
                   className="form-input" 
                   type="text" 
-                  placeholder="Masukkan nama provider custom (e.g. sendgrid, slack)" 
+                  placeholder="Enter custom provider name (e.g. sendgrid, slack)" 
                   value={customProvider}
                   onChange={(e) => setCustomProvider(e.target.value)}
                 />

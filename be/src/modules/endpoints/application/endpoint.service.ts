@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { ENDPOINT_REPOSITORY } from '../domain/ports/endpoint-repository.port';
 import type { IEndpointRepository } from '../domain/ports/endpoint-repository.port';
@@ -14,12 +14,11 @@ export class EndpointService {
     private readonly endpointRepository: IEndpointRepository,
   ) {}
 
-  async create(userId: string, dto: CreateEndpointDto) {
+  async create(dto: CreateEndpointDto) {
     const incomingKey = randomBytes(16).toString('hex'); // 32 chars
     const generatedSigningSecret = 'whsec_' + randomBytes(24).toString('base64url');
     
     const endpoint = await this.endpointRepository.create({
-      userId,
       name: dto.name,
       incomingKey,
       destinationUrl: dto.destinationUrl,
@@ -28,27 +27,24 @@ export class EndpointService {
       isActive: true,
     });
 
-    this.logger.log(`Endpoint created: id=${endpoint.id}, userId=${userId}`);
+    this.logger.log(`Endpoint created: id=${endpoint.id}`);
     return endpoint;
   }
 
-  async findAllByUser(userId: string) {
-    return this.endpointRepository.findByUserId(userId);
+  async findAll() {
+    return this.endpointRepository.findAll();
   }
 
-  async findOne(id: string, userId: string) {
+  async findOne(id: string) {
     const endpoint = await this.endpointRepository.findById(id);
     if (!endpoint) {
       throw new NotFoundException('Endpoint not found');
     }
-    if (endpoint.userId !== userId) {
-      throw new ForbiddenException('You do not have access to this endpoint');
-    }
     return endpoint;
   }
 
-  async update(id: string, userId: string, dto: UpdateEndpointDto) {
-    const endpoint = await this.findOne(id, userId);
+  async update(id: string, dto: UpdateEndpointDto) {
+    const endpoint = await this.findOne(id);
     
     const updated = await this.endpointRepository.update(id, {
       name: dto.name ?? endpoint.name,
@@ -58,14 +54,14 @@ export class EndpointService {
       isActive: dto.isActive ?? endpoint.isActive,
     });
 
-    this.logger.log(`Endpoint updated: id=${id}, userId=${userId}`);
+    this.logger.log(`Endpoint updated: id=${id}`);
     return updated;
   }
 
-  async remove(id: string, userId: string) {
-    await this.findOne(id, userId); // verify ownership and existence
+  async remove(id: string) {
+    await this.findOne(id); // verify existence
     await this.endpointRepository.softDelete(id);
-    this.logger.log(`Endpoint soft-deleted: id=${id}, userId=${userId}`);
+    this.logger.log(`Endpoint soft-deleted: id=${id}`);
     return { success: true };
   }
 }

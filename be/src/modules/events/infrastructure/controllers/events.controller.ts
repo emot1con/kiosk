@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Param, UseGuards, Request, Inject, NotFoundException, Query } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Get, Post, Param, Inject, NotFoundException, Query } from '@nestjs/common';
+
 import { EVENT_REPOSITORY } from '../../domain/ports/event-repository.port';
 import type { IEventRepository } from '../../domain/ports/event-repository.port';
 import { ENDPOINT_REPOSITORY } from '../../../endpoints/domain/ports/endpoint-repository.port';
@@ -8,7 +8,6 @@ import { QUEUE_PUBLISHER } from '../../domain/ports/queue-publisher.port';
 import type { IQueuePublisher } from '../../domain/ports/queue-publisher.port';
 
 @Controller('events')
-@UseGuards(AuthGuard('jwt'))
 export class EventsController {
   constructor(
     @Inject(EVENT_REPOSITORY)
@@ -20,12 +19,11 @@ export class EventsController {
   ) {}
 
   @Get()
-  async getEvents(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
-    const userId = req.user.id;
+  async getEvents(@Query('page') page?: string, @Query('limit') limit?: string) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 15;
     
-    const events = await this.eventRepository.findByUserId(userId, { 
+    const events = await this.eventRepository.findAll({ 
       page: pageNum, 
       limit: limitNum 
     });
@@ -33,15 +31,9 @@ export class EventsController {
   }
 
   @Post(':id/retry')
-  async retryEvent(@Request() req, @Param('id') id: string) {
-    const userId = req.user.id;
+  async retryEvent(@Param('id') id: string) {
     const event = await this.eventRepository.findById(id);
     if (!event) {
-      throw new NotFoundException('Event not found');
-    }
-    // Verify ownership
-    const endpoints = await this.endpointRepository.findByUserId(userId);
-    if (!endpoints.some(e => e.id === event.endpointId)) {
       throw new NotFoundException('Event not found');
     }
 
@@ -54,9 +46,8 @@ export class EventsController {
   }
 
   @Post('retry-all-dead')
-  async retryAllDead(@Request() req) {
-    const userId = req.user.id;
-    const ids = await this.eventRepository.resetAllDeadEvents(userId);
+  async retryAllDead() {
+    const ids = await this.eventRepository.resetAllDeadEvents();
     
     for (const id of ids) {
       await this.queuePublisher.publish(id);

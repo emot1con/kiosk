@@ -5,8 +5,6 @@ export class EndpointOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'user_id', type: 'uuid' })
-  userId: string;
 
   @Column({ length: 100 })
   name: string;

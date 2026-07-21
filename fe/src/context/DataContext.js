@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { initialEndpoints, initialEvents, initialAttempts } from "@/lib/mockData";
 import { apiClient } from "@/lib/api";
 
 const DataContext = createContext(null);
@@ -19,7 +18,7 @@ export function DataProvider({ children }) {
     try {
       const [endpointsRes, eventsRes, attemptsRes, metricsRes, timeseriesRes, healthRes] = await Promise.all([
         apiClient.get('/endpoints'),
-        apiClient.get('/events?limit=20'), // We should limit events fetching eventually, keeping limit param just in case backend supports it
+        apiClient.get('/events?limit=20'),
         apiClient.get('/attempts?limit=20'),
         apiClient.get('/analytics/metrics'),
         apiClient.get(`/analytics/timeseries?hours=${timeseriesHours}`),
@@ -44,21 +43,15 @@ export function DataProvider({ children }) {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('kiosk_access_token');
-    if (token) {
-      fetchData().finally(() => {
-        setIsDataLoading(false);
-      });
-
-      // Poll every 3 seconds to feel alive
-      const interval = setInterval(fetchData, 3000);
-      return () => clearInterval(interval);
-    } else {
+    // No auth check needed — self-hosted, always fetch
+    fetchData().finally(() => {
       setIsDataLoading(false);
-    }
-  }, [timeseriesHours]);
+    });
 
-  // Background Processor removed, we now rely on real backend and polling.
+    // Poll every 3 seconds to feel alive
+    const interval = setInterval(fetchData, 3000);
+    return () => clearInterval(interval);
+  }, [timeseriesHours]);
 
   // Actions
   const addEndpoint = async (name, destinationUrl, provider) => {
@@ -102,19 +95,17 @@ export function DataProvider({ children }) {
     }
   };
 
-  // Simulates a manual retry
   const triggerManualRetry = async (eventId, forceSuccess = false) => {
     try {
       const { data } = await apiClient.post(`/events/${eventId}/retry`);
-      fetchData(); // Quickly fetch latest data to show it's pending/retrying
-      return { event: { status: 'retrying' } }; // return mock shape to satisfy current UI expectation
+      fetchData();
+      return { event: { status: 'retrying' } };
     } catch (err) {
       console.error("Failed to trigger manual retry", err);
       return null;
     }
   };
 
-  // Simulates incoming event using real Ingress API
   const simulateIncomingEvent = async (endpointId, provider = "Stripe", customPayload = null) => {
     const ep = endpoints.find(e => e.id === endpointId);
     if (!ep) return null;
@@ -132,7 +123,6 @@ export function DataProvider({ children }) {
           "User-Agent": `${provider}/1.0`,
         }
       });
-      // It will be fetched automatically by the polling `fetchData` interval
     } catch (err) {
       console.error("Failed to send incoming webhook", err);
     }

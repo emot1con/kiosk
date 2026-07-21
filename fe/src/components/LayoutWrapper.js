@@ -7,7 +7,7 @@ import Sidebar from "@/components/Sidebar";
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isLandingPage = pathname === "/";
 
   useEffect(() => {
     let lastKey = null;
@@ -49,8 +49,9 @@ export default function LayoutWrapper({ children }) {
     };
   }, [router]);
 
-  if (isAuthPage) {
-    return <div className="auth-container">{children}</div>;
+  // Landing page renders without sidebar
+  if (isLandingPage) {
+    return <>{children}</>;
   }
 
   return (
@@ -62,4 +63,3 @@ export default function LayoutWrapper({ children }) {
     </div>
   );
 }
-

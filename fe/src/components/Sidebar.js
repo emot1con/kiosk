@@ -3,24 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Activity, 
-  Terminal, 
-  Settings, 
-  LogOut, 
-  Webhook,
-  Search,
-  Sun,
-  Moon
-} from "lucide-react";
+import { LayoutDashboard, Activity, Terminal, Settings, Webhook, Search, Sun, Moon, ExternalLink, Home } from "lucide-react";
 import styles from "./Sidebar.module.css";
-import { useAuth } from "@/context/AuthContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth() || { user: { email: "user@kiosk.dev" }, logout: () => {} };
-
   const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
@@ -56,34 +43,16 @@ export default function Sidebar() {
         <span className={styles.logoText}>KIOSK</span>
       </div>
 
-      <button 
-        onClick={() => {
-          const event = new KeyboardEvent("keydown", {
-            key: "k",
-            metaKey: true,
-            bubbles: true
-          });
-          window.dispatchEvent(event);
-        }}
-        className={styles.searchTrigger}
-      >
-        <Search size={13} />
-        <span>Search...</span>
-        <kbd>⌘K</kbd>
+      <button onClick={() => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true })); }} className={styles.searchTrigger}>
+        <Search size={13} /><span>Search...</span><kbd>⌘K</kbd>
       </button>
 
       <nav className={styles.nav}>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const active = isActive(item.href);
           return (
-            <Link 
-              key={item.name} 
-              href={item.href}
-              className={`${styles.navLink} ${active ? styles.activeLink : ""}`}
-            >
-              <Icon className={styles.navIcon} />
-              <span>{item.name}</span>
+            <Link key={item.name} href={item.href} className={`${styles.navLink} ${isActive(item.href) ? styles.activeLink : ""}`}>
+              <Icon className={styles.navIcon} /><span>{item.name}</span>
             </Link>
           );
         })}
@@ -92,21 +61,17 @@ export default function Sidebar() {
       <div className={styles.footer}>
         <div className={styles.profileInfo}>
           <div style={{ overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
-            <div className={styles.profileEmail}>{user?.email || "user@kiosk.dev"}</div>
-            <div className={styles.profileRole}>Developer</div>
+            <div className={styles.profileEmail}>Kiosk v1.0.0</div>
+            <div className={styles.profileRole}>Self-Hosted</div>
           </div>
-          <button 
-            onClick={toggleTheme} 
-            className={styles.themeToggle}
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
+          <button onClick={toggleTheme} className={styles.themeToggle} title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}>
             {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </button>
         </div>
-        <button onClick={logout} className={styles.logoutBtn}>
-          <LogOut size={15} />
-          <span>Logout</span>
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Link href="/" className={styles.logoutBtn}><Home size={15} /><span>Home</span></Link>
+          <a href="https://github.com/emot1con/kiosk" target="_blank" rel="noopener noreferrer" className={styles.logoutBtn} style={{ flex: 1 }}><ExternalLink size={15} /><span>GitHub</span></a>
+        </div>
       </div>
     </aside>
   );

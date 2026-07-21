@@ -20,44 +20,25 @@ CREATE TYPE event_status AS ENUM ('pending', 'delivered', 'retrying', 'dead');
 -- 3. TABLES
 -- ============================================================
 
--- ----- users -----
-CREATE TABLE users (
-    id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    email         VARCHAR(255) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    api_key_hash  VARCHAR(255),
-    api_key_prefix VARCHAR(50),
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    deleted_at    TIMESTAMPTZ,
-
-    CONSTRAINT uq_users_email   UNIQUE (email),
-    CONSTRAINT uq_users_api_key_hash UNIQUE (api_key_hash)
-);
-
-COMMENT ON TABLE  users IS 'Akun developer yang mengelola webhook endpoints';
-COMMENT ON COLUMN users.api_key_hash IS 'Hash dari token autentikasi incoming webhook';
-
 -- ----- endpoints -----
 CREATE TABLE endpoints (
     id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id         UUID         NOT NULL,
     name            VARCHAR(100) NOT NULL,
     incoming_key    VARCHAR(32)  NOT NULL,
     destination_url TEXT         NOT NULL,
+    provider        VARCHAR(50)  DEFAULT NULL,
     signing_secret  VARCHAR(255),
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted_at      TIMESTAMPTZ,
 
-    CONSTRAINT uq_endpoints_incoming_key UNIQUE (incoming_key),
-    CONSTRAINT fk_endpoints_user 
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT uq_endpoints_incoming_key UNIQUE (incoming_key)
 );
 
-COMMENT ON TABLE  endpoints IS 'Konfigurasi webhook endpoint: incoming URL → destination URL';
+COMMENT ON TABLE  endpoints IS 'Konfigurasi webhook endpoint: incoming URL untuk destination URL';
 COMMENT ON COLUMN endpoints.incoming_key IS 'Path segment URL publik, dibuat random saat user membuat endpoint';
+COMMENT ON COLUMN endpoints.signing_secret IS 'HMAC secret untuk menandatangani outgoing webhook payload';
 COMMENT ON COLUMN endpoints.is_active IS 'false = worker skip processing event baru untuk endpoint ini';
 
 -- ----- events -----
@@ -66,6 +47,8 @@ CREATE TABLE events (
     endpoint_id   UUID         NOT NULL,
     provider      VARCHAR(50),
     status        event_status NOT NULL DEFAULT 'pending',
+    idempotency_key VARCHAR(255),
+    is_processing BOOLEAN      NOT NULL DEFAULT FALSE,
     headers       JSONB        NOT NULL DEFAULT '{}',
     payload       JSONB        NOT NULL DEFAULT '{}',
     retry_count   INT          NOT NULL DEFAULT 0,
@@ -75,16 +58,17 @@ CREATE TABLE events (
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted_at    TIMESTAMPTZ,
 
-    CONSTRAINT fk_events_endpoint 
+    CONSTRAINT fk_events_endpoint
         FOREIGN KEY (endpoint_id) REFERENCES endpoints(id) ON DELETE CASCADE,
-    CONSTRAINT chk_events_retry_count 
+    CONSTRAINT uq_events_idempotency UNIQUE (endpoint_id, idempotency_key),
+    CONSTRAINT chk_events_retry_count
         CHECK (retry_count >= 0),
-    CONSTRAINT chk_events_max_retries 
+    CONSTRAINT chk_events_max_retries
         CHECK (max_retries > 0)
 );
 
 COMMENT ON TABLE  events IS 'Webhook event yang diterima — satu payload masuk = satu record';
-COMMENT ON COLUMN events.status IS 'Lifecycle: pending → delivered | retrying → dead';
+COMMENT ON COLUMN events.status IS 'Lifecycle: pending | delivered | retrying | dead';
 COMMENT ON COLUMN events.headers IS 'HTTP headers asli dari provider (JSONB)';
 COMMENT ON COLUMN events.payload IS 'Body request asli dari provider (JSONB)';
 COMMENT ON COLUMN events.next_retry_at IS 'Waktu retry berikutnya dijadwalkan, NULL jika delivered/dead';
@@ -99,9 +83,9 @@ CREATE TABLE delivery_attempts (
     attempted_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at      TIMESTAMPTZ,
 
-    CONSTRAINT fk_attempts_event 
+    CONSTRAINT fk_attempts_event
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-    CONSTRAINT chk_attempts_latency 
+    CONSTRAINT chk_attempts_latency
         CHECK (latency_ms >= 0)
 );
 
@@ -110,19 +94,32 @@ COMMENT ON COLUMN delivery_attempts.response_status IS 'HTTP status code dari de
 COMMENT ON COLUMN delivery_attempts.response_body IS 'Response body dari destination (TEXT, tidak selalu JSON)';
 COMMENT ON COLUMN delivery_attempts.latency_ms IS 'Waktu tempuh request dalam milidetik';
 
+-- ----- global_event_stats -----
+CREATE TABLE global_event_stats (
+    id VARCHAR(10) PRIMARY KEY,
+    total INT DEFAULT 0,
+    pending INT DEFAULT 0,
+    delivered INT DEFAULT 0,
+    retrying INT DEFAULT 0,
+    dead INT DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO global_event_stats (id) VALUES ('global');
+
+COMMENT ON TABLE global_event_stats IS 'Pre-aggregated event counters untuk performa dashboard O(1)';
+
 -- ============================================================
 -- 4. INDEXES
 -- ============================================================
-CREATE INDEX idx_users_api_key_hash ON users (api_key_hash);
-CREATE INDEX idx_endpoints_user_id ON endpoints (user_id);
 CREATE INDEX idx_endpoints_incoming_key ON endpoints (incoming_key);
 CREATE INDEX idx_events_endpoint_id ON events (endpoint_id);
 CREATE INDEX idx_events_status ON events (status);
 CREATE INDEX idx_events_created_at ON events (created_at DESC);
 
 -- Partial index for worker queue retry selection
-CREATE INDEX idx_events_retry_queue 
-    ON events (next_retry_at) 
+CREATE INDEX idx_events_retry_queue
+    ON events (next_retry_at)
     WHERE status = 'retrying' AND next_retry_at IS NOT NULL;
 
 CREATE INDEX idx_attempts_event_id ON delivery_attempts (event_id);
@@ -138,10 +135,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_users_updated_at
-    BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
 CREATE TRIGGER trg_endpoints_updated_at
     BEFORE UPDATE ON endpoints

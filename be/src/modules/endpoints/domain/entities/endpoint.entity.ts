@@ -1,6 +1,5 @@
 export class Endpoint {
   id: string;
-  userId: string;
   name: string;
   incomingKey: string;
   destinationUrl: string;

@@ -13,10 +13,9 @@ export class AnalyticsService {
     private readonly attemptRepo: Repository<AttemptOrmEntity>,
   ) {}
 
-  async getMetrics(userId: string, endpointId?: string) {
+  async getMetrics(endpointId?: string) {
     const query = this.eventRepo.createQueryBuilder('event');
-    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
-         .where('endpoint.user_id = :userId', { userId });
+    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId');
          
     if (endpointId) {
       query.andWhere('event.endpointId = :endpointId', { endpointId });
@@ -42,8 +41,7 @@ export class AnalyticsService {
     // Get average latency
     const latencyQuery = this.attemptRepo.createQueryBuilder('attempt');
     latencyQuery.innerJoin('events', 'event', 'event.id = attempt.eventId')
-                .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
-                .where('endpoint.user_id = :userId', { userId });
+                .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId');
 
     if (endpointId) {
       latencyQuery.andWhere('event.endpointId = :endpointId', { endpointId });
@@ -63,11 +61,10 @@ export class AnalyticsService {
     };
   }
 
-  async getTimeSeries(userId: string, endpointId?: string, hours: number = 24) {
+  async getTimeSeries(endpointId?: string, hours: number = 24) {
     // Generate buckets for the last N hours
     const query = this.eventRepo.createQueryBuilder('event');
-    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
-         .where('endpoint.user_id = :userId', { userId });
+    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId');
     
     if (endpointId) {
       query.andWhere('event.endpointId = :endpointId', { endpointId });
@@ -95,10 +92,9 @@ export class AnalyticsService {
     }));
   }
 
-  async getEndpointsHealth(userId: string) {
+  async getEndpointsHealth() {
     const query = this.eventRepo.createQueryBuilder('event');
-    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId')
-         .where('endpoint.user_id = :userId', { userId });
+    query.innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpointId');
     query.select([
       'event.endpointId as endpoint_id',
       'COUNT(*) as events_count',

@@ -52,7 +52,6 @@ export class ProcessDeliveryUseCase {
     if (!endpoint) {
       this.logger.error(`Endpoint ${event.endpointId} not found for event ${eventId}. Marking event as dead.`);
       await this.eventRepository.updateStatus(eventId, 'dead');
-      // Note: userId unknown here, counter update skipped (edge case)
       return;
     }
 
@@ -104,16 +103,16 @@ export class ProcessDeliveryUseCase {
     if (isSuccess) {
       this.logger.log(`Event ${event.id} delivered successfully with status ${result.status}`);
       await this.eventRepository.updateStatus(event.id, 'delivered');
-      this.eventRepository.transitionStat(endpoint.userId, fromStatus, 'delivered').catch(err =>
-        this.logger.error(`transitionStat failed for user ${endpoint.userId}`, err),
+      this.eventRepository.transitionStat(fromStatus, 'delivered').catch(err =>
+        this.logger.error(`transitionStat failed for event ${event.id}`, err),
       );
     } else {
       const nextRetryCount = event.retryCount + 1;
       if (nextRetryCount >= event.maxRetries) {
         this.logger.warn(`Event ${event.id} failed after reaching max retries (${event.maxRetries}). Marking as dead.`);
         await this.eventRepository.updateStatus(event.id, 'dead');
-        this.eventRepository.transitionStat(endpoint.userId, fromStatus, 'dead').catch(err =>
-          this.logger.error(`transitionStat failed for user ${endpoint.userId}`, err),
+        this.eventRepository.transitionStat(fromStatus, 'dead').catch(err =>
+          this.logger.error(`transitionStat failed for event ${event.id}`, err),
         );
       } else {
         const nextRetryAt = this.retryStrategy.calculateNextRetry(event.retryCount);
@@ -124,8 +123,8 @@ export class ProcessDeliveryUseCase {
           retryCount: nextRetryCount,
           nextRetryAt,
         });
-        this.eventRepository.transitionStat(endpoint.userId, fromStatus, 'retrying').catch(err =>
-          this.logger.error(`transitionStat failed for user ${endpoint.userId}`, err),
+        this.eventRepository.transitionStat(fromStatus, 'retrying').catch(err =>
+          this.logger.error(`transitionStat failed for event ${event.id}`, err),
         );
 
         // Publish to delayed queue as primary retry mechanism

@@ -70,8 +70,8 @@ export class IngressService {
     this.logger.log(`Created event ${event.id} for endpoint ${endpoint.id}`);
 
     // Update pre-aggregated counter (fire-and-forget, non-blocking)
-    this.eventRepository.incrementStat(endpoint.userId, 'pending').catch(err =>
-      this.logger.error(`Failed to increment stat for user ${endpoint.userId}`, err),
+    this.eventRepository.incrementStat('pending').catch(err =>
+      this.logger.error(`Failed to increment stat for event ${event.id}`, err),
     );
 
     // Publish to delivery queue

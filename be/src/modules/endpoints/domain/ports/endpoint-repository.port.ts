@@ -4,7 +4,7 @@ export const ENDPOINT_REPOSITORY = Symbol('ENDPOINT_REPOSITORY');
 
 export interface IEndpointRepository {
   findById(id: string): Promise<Endpoint | null>;
-  findByUserId(userId: string): Promise<Endpoint[]>;
+  findAll(): Promise<Endpoint[]>;
   findByIncomingKey(key: string): Promise<Endpoint | null>;
   create(data: Partial<Endpoint>): Promise<Endpoint>;
   update(id: string, data: Partial<Endpoint>): Promise<Endpoint>;

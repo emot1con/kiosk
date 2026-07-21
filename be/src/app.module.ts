@@ -4,7 +4,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SharedModule } from './shared/shared.module';
-import { AuthModule } from './modules/auth/auth.module';
 import { EndpointsModule } from './modules/endpoints/endpoints.module';
 import { EventsModule } from './modules/events/events.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
@@ -34,7 +33,6 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
       }),
       inject: [ConfigService],
     }),
-    AuthModule,
     EndpointsModule,
     EventsModule,
     DeliveryModule,
