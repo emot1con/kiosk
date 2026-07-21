@@ -187,6 +187,9 @@ export class PostgresEventRepository implements IEventRepository {
     from: 'pending' | 'retrying',
     to: 'delivered' | 'retrying' | 'dead',
   ): Promise<void> {
+    if (from === to) {
+      return;
+    }
     await this.dataSource.query(
       `INSERT INTO user_event_stats (user_id, total, pending, delivered, retrying, dead)
        VALUES ($1, 0, 0, 0, 0, 0)
