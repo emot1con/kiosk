@@ -19,13 +19,22 @@ export class EventsController {
   ) {}
 
   @Get()
-  async getEvents(@Query('page') page?: string, @Query('limit') limit?: string) {
+  async getEvents(
+    @Query('page') page?: string, 
+    @Query('limit') limit?: string,
+    @Query('endpointId') endpointId?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 15;
     
     const events = await this.eventRepository.findAll({ 
       page: pageNum, 
-      limit: limitNum 
+      limit: limitNum,
+      endpointId,
+      status,
+      search,
     });
     return events;
   }

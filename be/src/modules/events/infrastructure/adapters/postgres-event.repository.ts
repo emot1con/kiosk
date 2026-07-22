@@ -47,14 +47,34 @@ export class PostgresEventRepository implements IEventRepository {
     return ormEntities.map(e => this.mapToDomain(e));
   }
 
-  async findAll(filters?: { page?: number; limit?: number }): Promise<{ data: WebhookEvent[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
+  async findAll(filters?: { 
+    page?: number; 
+    limit?: number;
+    endpointId?: string;
+    status?: string;
+    search?: string;
+  }): Promise<{ data: WebhookEvent[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
     const page = filters?.page && filters.page > 0 ? filters.page : 1;
     const limit = filters?.limit && filters.limit > 0 ? filters.limit : 15;
     const skip = (page - 1) * limit;
 
-    const [ormEntities, total] = await this.repository.createQueryBuilder('event')
+    const query = this.repository.createQueryBuilder('event')
       .innerJoin('endpoints', 'endpoint', 'endpoint.id = event.endpoint_id')
-      .where('event.deleted_at IS NULL')
+      .where('event.deleted_at IS NULL');
+
+    if (filters?.endpointId && filters.endpointId !== 'all') {
+      query.andWhere('event.endpoint_id = :endpointId', { endpointId: filters.endpointId });
+    }
+
+    if (filters?.status && filters.status !== 'all') {
+      query.andWhere('event.status = :status', { status: filters.status });
+    }
+
+    if (filters?.search) {
+      query.andWhere('event.id ILIKE :search', { search: `%${filters.search}%` });
+    }
+
+    const [ormEntities, total] = await query
       .orderBy('event.created_at', 'DESC')
       .skip(skip)
       .take(limit)

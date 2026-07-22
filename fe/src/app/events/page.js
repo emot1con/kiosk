@@ -11,6 +11,7 @@ import {
   Download
 } from "lucide-react";
 import { useData } from "@/context/DataContext";
+import { apiClient } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 import StatusBadge from "@/components/StatusBadge";
 import Pagination from "@/components/Pagination";
@@ -19,7 +20,7 @@ import { formatDateTime } from "@/lib/utils";
 import styles from "./events.module.css";
 
 export default function EventsPage() {
-  const { endpoints, events, bulkRetryDeadEvents, isDataLoading } = useData();
+  const { endpoints, analyticsMetrics, bulkRetryDeadEvents, isDataLoading } = useData();
   const { showToast } = useToast();
 
   // Filter states
@@ -29,61 +30,154 @@ export default function EventsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // Reset page when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedEndpoint, selectedStatus, searchQuery]);
+  // Local state for paginated backend events
+  const [localEvents, setLocalEvents] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isEventsLoading, setIsEventsLoading] = useState(true);
 
-  const deadEvents = events.filter(e => e.status === "dead");
+  const fetchEvents = async () => {
+    try {
+      const params = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      };
+      if (selectedEndpoint !== "all") params.endpointId = selectedEndpoint;
+      if (selectedStatus !== "all") params.status = selectedStatus;
+      if (searchQuery) params.search = searchQuery;
+
+      const response = await apiClient.get("/events", { params });
+      const responseData = response.data;
+      if (responseData && responseData.data) {
+        setLocalEvents(responseData.data);
+        setTotalItems(responseData.meta.total);
+        setTotalPages(responseData.meta.totalPages);
+      } else {
+        setLocalEvents(responseData);
+        setTotalItems(responseData.length);
+        setTotalPages(Math.ceil(responseData.length / ITEMS_PER_PAGE));
+      }
+    } catch (err) {
+      console.error("Failed to fetch events", err);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    const load = async () => {
+      await fetchEvents();
+      if (isMounted) {
+        setIsEventsLoading(false);
+      }
+    };
+
+    load();
+
+    const interval = setInterval(fetchEvents, 3000);
+    
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [currentPage, selectedEndpoint, selectedStatus, searchQuery]);
+
+  const deadEventsCount = analyticsMetrics?.deadEvents || 0;
 
   const handleBulkRetry = async () => {
-    if (confirm(`Apakah Anda yakin ingin mencoba mengirim ulang ${deadEvents.length} event yang gagal permanen (dead)?`)) {
+    if (confirm(`Apakah Anda yakin ingin mencoba mengirim ulang ${deadEventsCount} event yang gagal permanen (dead)?`)) {
       await bulkRetryDeadEvents();
-      showToast(`${deadEvents.length} event sedang diproses ulang.`, "success");
+      showToast(`${deadEventsCount} event sedang diproses ulang.`, "success");
     }
   };
 
-  const handleExportJSON = () => {
-    if (filteredEvents.length === 0) {
-      showToast("Tidak ada logs untuk diexport.", "warning");
-      return;
+  const handleExportJSON = async () => {
+    try {
+      const params = {
+        limit: 100000,
+      };
+      if (selectedEndpoint !== "all") params.endpointId = selectedEndpoint;
+      if (selectedStatus !== "all") params.status = selectedStatus;
+      if (searchQuery) params.search = searchQuery;
+
+      const response = await apiClient.get("/events", { params });
+      const data = response.data.data ? response.data.data : response.data;
+
+      if (data.length === 0) {
+        showToast("Tidak ada logs untuk diexport.", "warning");
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `kiosk_webhook_logs_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Logs berhasil diexport ke JSON!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal melakukan export JSON.", "error");
     }
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredEvents, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `kiosk_webhook_logs_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    showToast("Logs berhasil diexport ke JSON!", "success");
   };
 
-  const handleExportCSV = () => {
-    if (filteredEvents.length === 0) {
-      showToast("Tidak ada logs untuk diexport.", "warning");
-      return;
-    }
-    const headers = ["ID", "Endpoint ID", "Provider", "Status", "Retry Count", "Max Retries", "Created At"];
-    const rows = filteredEvents.map(e => [
-      e.id,
-      e.endpointId,
-      e.provider,
-      e.status,
-      e.retryCount,
-      e.maxRetries,
-      e.createdAt
-    ]);
+  const handleExportCSV = async () => {
+    try {
+      const params = {
+        limit: 100000,
+      };
+      if (selectedEndpoint !== "all") params.endpointId = selectedEndpoint;
+      if (selectedStatus !== "all") params.status = selectedStatus;
+      if (searchQuery) params.search = searchQuery;
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(r => r.map(val => `"${val}"`).join(","))].join("\n");
-      
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", encodeURI(csvContent));
-    downloadAnchor.setAttribute("download", `kiosk_webhook_logs_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    showToast("Logs berhasil diexport ke CSV!", "success");
+      const response = await apiClient.get("/events", { params });
+      const data = response.data.data ? response.data.data : response.data;
+
+      if (data.length === 0) {
+        showToast("Tidak ada logs untuk diexport.", "warning");
+        return;
+      }
+      const headers = ["ID", "Endpoint ID", "Provider", "Status", "Retry Count", "Max Retries", "Created At"];
+      const rows = data.map(e => [
+        e.id,
+        e.endpointId,
+        e.provider,
+        e.status,
+        e.retryCount,
+        e.maxRetries,
+        e.createdAt
+      ]);
+
+      const csvContent = "data:text/csv;charset=utf-8," 
+        + [headers.join(","), ...rows.map(r => r.map(val => `"${val}"`).join(","))].join("\n");
+        
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", encodeURI(csvContent));
+      downloadAnchor.setAttribute("download", `kiosk_webhook_logs_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Logs berhasil diexport ke CSV!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal melakukan export CSV.", "error");
+    }
+  };
+
+  // Helper change handlers that reset pagination page
+  const handleEndpointChange = (e) => {
+    setSelectedEndpoint(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (e) => {
+    setSelectedStatus(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
   };
 
   if (isDataLoading) {
@@ -94,30 +188,6 @@ export default function EventsPage() {
     );
   }
 
-  // Filter events based on selections
-  const filteredEvents = events.filter((event) => {
-    // Filter by Endpoint
-    if (selectedEndpoint !== "all" && event.endpointId !== selectedEndpoint) {
-      return false;
-    }
-    // Filter by Status
-    if (selectedStatus !== "all" && event.status !== selectedStatus) {
-      return false;
-    }
-    // Filter by Search Query (ID)
-    if (searchQuery && !event.id.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    return true;
-  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  const totalItems = filteredEvents.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const paginatedEvents = filteredEvents.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
   return (
     <div>
       <div className={styles.headerRow}>
@@ -126,7 +196,7 @@ export default function EventsPage() {
           <p className={styles.pageSubtitle}>Pantau semua riwayat pengiriman payload webhook secara real-time</p>
         </div>
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-          {deadEvents.length > 0 && (
+          {deadEventsCount > 0 && (
             <button 
               className="btn btn-secondary" 
               style={{ 
@@ -137,7 +207,7 @@ export default function EventsPage() {
               onClick={handleBulkRetry}
             >
               <RotateCw size={14} />
-              <span>Retry All Dead ({deadEvents.length})</span>
+              <span>Retry All Dead ({deadEventsCount})</span>
             </button>
           )}
 
@@ -186,7 +256,7 @@ export default function EventsPage() {
                 type="text" 
                 placeholder="Cari Event ID..." 
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
           </div>
@@ -196,7 +266,7 @@ export default function EventsPage() {
             <select 
               className="form-input"
               value={selectedEndpoint}
-              onChange={(e) => setSelectedEndpoint(e.target.value)}
+              onChange={handleEndpointChange}
             >
               <option value="all">All Endpoints</option>
               {endpoints.map(ep => (
@@ -210,7 +280,7 @@ export default function EventsPage() {
             <select 
               className="form-input"
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={handleStatusChange}
             >
               <option value="all">All Statuses</option>
               <option value="delivered">Delivered</option>
@@ -225,7 +295,11 @@ export default function EventsPage() {
 
       {/* Events Table Listing */}
       <div className={`${styles.card} glass-card`}>
-        {filteredEvents.length === 0 ? (
+        {isEventsLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "3rem" }}>
+            <p style={{ color: "var(--text-secondary)" }}>Loading events...</p>
+          </div>
+        ) : totalItems === 0 ? (
           <EmptyState 
             icon={Filter}
             title="Tidak ada event log ditemukan"
@@ -235,6 +309,7 @@ export default function EventsPage() {
               setSelectedEndpoint("all");
               setSelectedStatus("all");
               setSearchQuery("");
+              setCurrentPage(1);
             }}
           />
         ) : (
@@ -252,7 +327,7 @@ export default function EventsPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedEvents.map((event) => {
+                {localEvents.map((event) => {
                   const endpoint = endpoints.find(ep => ep.id === event.endpointId);
                   return (
                     <tr key={event.id}>
